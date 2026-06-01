@@ -78,7 +78,7 @@ function RoundPage() {
 
   return (
     <AppShell fullHeight>
-      <section className="animate-reveal flex flex-col h-full gap-3 py-4">
+      <section className="animate-reveal flex flex-col h-full gap-2 py-2">
         {/* Top stats bubble */}
         <div className="shrink-0 bg-navy rounded-2xl px-5 py-3 text-paper flex items-center justify-between">
           <div>
@@ -105,8 +105,8 @@ function RoundPage() {
         </div>
 
         {/* Hole card */}
-        <div className="flex-1 min-h-0 overflow-y-auto bg-navy p-7 text-paper rounded-3xl">
-          <div className="mb-8 flex items-center justify-between">
+        <div className="flex-1 min-h-0 overflow-y-auto bg-navy p-4 text-paper rounded-3xl">
+          <div className="mb-3 flex items-center justify-between">
             <div className="font-display text-3xl tracking-wide">
               Hole {String(current.hole).padStart(2, "0")}
             </div>
@@ -115,7 +115,7 @@ function RoundPage() {
             </div>
           </div>
 
-          <div className="mb-8 flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
             <span className="text-xs font-bold uppercase tracking-widest">Par</span>
             <div className="flex gap-1">
               {([3, 4, 5] as const).map((p) => {
@@ -144,28 +144,28 @@ function RoundPage() {
             </div>
           </div>
 
-          <div className="mb-10 flex flex-col items-center">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] opacity-60">
+          <div className="mb-3 flex flex-col items-center">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.3em] opacity-60">
               Score
             </p>
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-6">
               <button
                 onClick={() => patch({ score: Math.max(1, current.score - 1) })}
-                className="grid size-14 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10 touch-manipulation"
+                className="grid size-12 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10 touch-manipulation"
                 aria-label="Decrease score"
               >
                 −
               </button>
-              <span className="font-display text-8xl leading-none">{current.score}</span>
+              <span className="font-display text-7xl leading-none">{current.score}</span>
               <button
                 onClick={() => patch({ score: Math.min(15, current.score + 1) })}
-                className="grid size-14 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10 touch-manipulation"
+                className="grid size-12 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10 touch-manipulation"
                 aria-label="Increase score"
               >
                 +
               </button>
             </div>
-            <p className="mt-2 font-mono text-xs opacity-50">
+            <p className="mt-1 font-mono text-xs opacity-50">
               {scoreLabel(current.score, current.par)}
             </p>
           </div>
@@ -191,7 +191,7 @@ function RoundPage() {
           </Row>
 
           {current.par > 3 && (
-            <div className="border-b border-white/10 py-3">
+            <div className="border-b border-white/10 py-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-widest">Fairway Hit</span>
                 <YesNoToggle
@@ -211,7 +211,7 @@ function RoundPage() {
             </div>
           )}
 
-          <div className="border-b border-white/10 py-3">
+          <div className="border-b border-white/10 py-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-widest text-grass">GIR</span>
               <YesNoToggle
@@ -290,7 +290,7 @@ function Row({
   return (
     <div
       className={
-        "flex items-center justify-between py-3 " +
+        "flex items-center justify-between py-2 " +
         (last ? "" : "border-b border-white/10")
       }
     >
