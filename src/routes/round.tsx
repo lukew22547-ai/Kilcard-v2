@@ -104,12 +104,12 @@ function RoundPage() {
         />
 
         {/* Hole card */}
-        <div className="bg-navy p-6 text-paper">
+        <div className="bg-navy p-7 text-paper rounded-3xl">
           <div className="mb-8 flex items-center justify-between">
             <div className="font-display text-3xl tracking-wide">
               Hole {String(current.hole).padStart(2, "0")}
             </div>
-            <div className="bg-grass px-2 py-1 text-[10px] font-bold uppercase tracking-widest">
+            <div className="bg-grass px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-full">
               Par {current.par}
             </div>
           </div>
@@ -132,7 +132,7 @@ function RoundPage() {
                       });
                     }}
                     className={
-                      "grid size-9 place-items-center text-[11px] font-bold transition-colors " +
+                      "grid size-11 place-items-center text-[11px] font-bold transition-colors rounded-xl touch-manipulation " +
                       (selected ? "bg-grass text-paper" : "bg-white/5 hover:bg-white/15")
                     }
                   >
@@ -150,7 +150,7 @@ function RoundPage() {
             <div className="flex items-center gap-8">
               <button
                 onClick={() => patch({ score: Math.max(1, current.score - 1) })}
-                className="grid size-12 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10"
+                className="grid size-14 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10 touch-manipulation"
                 aria-label="Decrease score"
               >
                 −
@@ -158,7 +158,7 @@ function RoundPage() {
               <span className="font-display text-8xl leading-none">{current.score}</span>
               <button
                 onClick={() => patch({ score: Math.min(15, current.score + 1) })}
-                className="grid size-12 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10"
+                className="grid size-14 place-items-center rounded-full border border-white/20 text-2xl font-light transition-colors hover:bg-white/10 touch-manipulation"
                 aria-label="Increase score"
               >
                 +
@@ -178,7 +178,7 @@ function RoundPage() {
                     key={n}
                     onClick={() => patch({ putts: n as HoleEntry["putts"] })}
                     className={
-                      "grid size-9 place-items-center text-[11px] font-bold transition-colors " +
+                      "grid size-11 place-items-center text-[11px] font-bold transition-colors rounded-xl touch-manipulation " +
                       (selected ? "bg-grass text-paper" : "bg-white/5 hover:bg-white/15")
                     }
                   >
@@ -233,14 +233,14 @@ function RoundPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => patch({ penalties: Math.max(0, current.penalties - 1) })}
-                className="grid size-7 place-items-center border border-white/20 text-sm font-light hover:bg-white/10"
+                className="grid size-10 place-items-center rounded-xl border border-white/20 text-sm font-light hover:bg-white/10 touch-manipulation"
               >
                 −
               </button>
               <span className="font-mono text-sm">{current.penalties}</span>
               <button
                 onClick={() => patch({ penalties: Math.min(9, current.penalties + 1) })}
-                className="grid size-7 place-items-center border border-white/20 text-sm font-light hover:bg-white/10"
+                className="grid size-10 place-items-center rounded-xl border border-white/20 text-sm font-light hover:bg-white/10 touch-manipulation"
               >
                 +
               </button>
@@ -252,21 +252,21 @@ function RoundPage() {
           <button
             onClick={prev}
             disabled={holeIdx === 0}
-            className="border border-navy/15 py-4 text-[10px] font-bold uppercase tracking-[0.25em] text-navy/70 disabled:opacity-30 hover:bg-navy/5"
+            className="border border-navy/15 py-4 text-[10px] font-bold uppercase tracking-[0.25em] text-navy/70 disabled:opacity-30 hover:bg-navy/5 rounded-2xl touch-manipulation"
           >
             ← Prev
           </button>
           {holeIdx === round.holes.length - 1 ? (
             <button
               onClick={finish}
-              className="col-span-2 bg-grass py-4 text-[11px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-navy"
+              className="col-span-2 bg-grass py-4 text-[11px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-navy rounded-2xl touch-manipulation"
             >
               Finish Round
             </button>
           ) : (
             <button
               onClick={next}
-              className="col-span-2 bg-grass py-4 text-[11px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-navy"
+              className="col-span-2 bg-grass py-4 text-[11px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-navy rounded-2xl touch-manipulation"
             >
               Next Hole →
             </button>
@@ -307,7 +307,7 @@ function YesNoToggle({
   onChange: (v: YesNo) => void;
 }) {
   return (
-    <div className="flex bg-white/5 p-1">
+    <div className="flex bg-white/5 p-1 rounded-xl overflow-hidden">
       {(["yes", "no"] as const).map((opt) => {
         const active = value === opt;
         return (
@@ -315,7 +315,7 @@ function YesNoToggle({
             key={opt}
             onClick={() => onChange(active ? null : opt)}
             className={
-              "px-4 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors " +
+              "px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors rounded-lg touch-manipulation " +
               (active ? "bg-paper text-navy" : "opacity-40 hover:opacity-80")
             }
           >
@@ -343,7 +343,7 @@ function MissDirectionPicker({
             key={dir}
             onClick={() => onChange(active ? null : dir)}
             className={
-              "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors " +
+              "px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors rounded-lg touch-manipulation " +
               (active ? "bg-paper text-navy" : "bg-white/5 opacity-40 hover:opacity-80")
             }
           >
