@@ -1,4 +1,5 @@
 export type YesNo = "yes" | "no" | null;
+export type MissDirection = "left" | "right" | "ob" | null;
 
 export interface HoleEntry {
   hole: number;
@@ -6,7 +7,9 @@ export interface HoleEntry {
   score: number;
   putts: 0 | 1 | 2 | 3 | null;
   fairway: YesNo; // only meaningful for par 4/5
+  fairwayMiss: MissDirection; // only when fairway === "no"
   gir: YesNo;
+  girMiss: MissDirection; // only when gir === "no"
   penalties: number;
 }
 
@@ -49,7 +52,9 @@ export function makeRound(course: string, holes: 9 | 18 = 18): Round {
       score: par,
       putts: null,
       fairway: null,
+      fairwayMiss: null,
       gir: null,
+      girMiss: null,
       penalties: 0,
     })),
   };

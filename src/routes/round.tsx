@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/kilcard/AppShell";
 import { pushHistory, useActiveRound } from "@/lib/kilcard/storage";
-import type { HoleEntry, Round, YesNo } from "@/lib/kilcard/types";
+import type { HoleEntry, MissDirection, Round, YesNo } from "@/lib/kilcard/types";
 import { computeStats, formatToPar, isPlayed } from "@/lib/kilcard/stats";
 
 export const Route = createFileRoute("/round")({
@@ -190,17 +190,44 @@ function RoundPage() {
           </Row>
 
           {current.par > 3 && (
-            <Row label="Fairway Hit">
-              <YesNoToggle
-                value={current.fairway}
-                onChange={(v) => patch({ fairway: v })}
-              />
-            </Row>
+            <div className="border-b border-white/10 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-widest">Fairway Hit</span>
+                <YesNoToggle
+                  value={current.fairway}
+                  onChange={(v) => patch({ fairway: v, fairwayMiss: v !== "no" ? null : current.fairwayMiss })}
+                />
+              </div>
+              {current.fairway === "no" && (
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-widest opacity-50">Miss</span>
+                  <MissDirectionPicker
+                    value={current.fairwayMiss}
+                    onChange={(v) => patch({ fairwayMiss: v })}
+                  />
+                </div>
+              )}
+            </div>
           )}
 
-          <Row label={<span className="text-grass">GIR</span>}>
-            <YesNoToggle value={current.gir} onChange={(v) => patch({ gir: v })} />
-          </Row>
+          <div className="border-b border-white/10 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-widest text-grass">GIR</span>
+              <YesNoToggle
+                value={current.gir}
+                onChange={(v) => patch({ gir: v, girMiss: v !== "no" ? null : current.girMiss })}
+              />
+            </div>
+            {current.gir === "no" && (
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-widest opacity-50">Miss</span>
+                <MissDirectionPicker
+                  value={current.girMiss}
+                  onChange={(v) => patch({ girMiss: v })}
+                />
+              </div>
+            )}
+          </div>
 
           <Row label="Penalties" last>
             <div className="flex items-center gap-3">
@@ -293,6 +320,34 @@ function YesNoToggle({
             }
           >
             {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function MissDirectionPicker({
+  value,
+  onChange,
+}: {
+  value: MissDirection;
+  onChange: (v: MissDirection) => void;
+}) {
+  return (
+    <div className="flex gap-1">
+      {(["left", "right", "ob"] as const).map((dir) => {
+        const active = value === dir;
+        return (
+          <button
+            key={dir}
+            onClick={() => onChange(active ? null : dir)}
+            className={
+              "px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors " +
+              (active ? "bg-paper text-navy" : "bg-white/5 opacity-40 hover:opacity-80")
+            }
+          >
+            {dir === "ob" ? "O.B." : dir}
           </button>
         );
       })}
