@@ -133,11 +133,11 @@ function SummaryContent({ round }: { round: Round }) {
               stats.holesPlayed < 1
                 ? [{ value: 1, color: "#e2e8f0" }]
                 : [
-                    { value: stats.girPct, color: "#16a34a" },
+                    { value: stats.girPct, color: "#22c55e" },
                     { value: 1 - stats.girPct, color: "#e2e8f0" },
                   ]
             }
-            valueColor="#16a34a"
+            valueColor="#22c55e"
           />
           <PieStat
             label="Avg Putts"
@@ -161,11 +161,11 @@ function SummaryContent({ round }: { round: Round }) {
               stats.fairwayAttempts === 0
                 ? [{ value: 1, color: "#e2e8f0" }]
                 : [
-                    { value: stats.fairwayHitPct, color: "#2563eb" },
+                    { value: stats.fairwayHitPct, color: "#38bdf8" },
                     { value: 1 - stats.fairwayHitPct, color: "#e2e8f0" },
                   ]
             }
-            valueColor="#2563eb"
+            valueColor="#38bdf8"
           />
           <PieStat
             label="Penalties"
@@ -173,13 +173,13 @@ function SummaryContent({ round }: { round: Round }) {
             sub="Strokes lost"
             segments={
               stats.penalties === 0
-                ? [{ value: 1, color: "#16a34a" }]
+                ? [{ value: 1, color: "#22c55e" }]
                 : [
-                    { value: Math.min(stats.penalties / 9, 1), color: "#dc2626" },
+                    { value: Math.min(stats.penalties / 9, 1), color: "#ef4444" },
                     { value: Math.max(0, 1 - stats.penalties / 9), color: "#e2e8f0" },
                   ]
             }
-            valueColor={stats.penalties === 0 ? "#16a34a" : "#dc2626"}
+            valueColor={stats.penalties === 0 ? "#22c55e" : "#ef4444"}
           />
         </div>
 
@@ -291,9 +291,9 @@ function InsightCard({ insight }: { insight: Insight }) {
 }
 
 function puttColor(avg: number): string {
-  if (avg <= 1.9) return "#16a34a";
+  if (avg <= 1.9) return "#22c55e";
   if (avg <= 2.2) return "#f59e0b";
-  return "#dc2626";
+  return "#ef4444";
 }
 
 function PieStat({
@@ -309,38 +309,64 @@ function PieStat({
   segments: Array<{ value: number; color: string }>;
   valueColor?: string;
 }) {
+  // Swap the light placeholder gray for a translucent white so it shows on dark cards
+  const adapted = segments.map((s) => ({
+    ...s,
+    color: s.color === "#e2e8f0" ? "rgba(255,255,255,0.1)" : s.color,
+  }));
+
   return (
-    <div className="flex flex-col items-center rounded-2xl bg-white p-4 ring-1 ring-navy/10">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-navy/50">{label}</p>
-      <div className="relative">
-        <PieChart width={110} height={110}>
-          <Pie
-            data={segments}
-            cx={55}
-            cy={55}
-            innerRadius={34}
-            outerRadius={50}
-            startAngle={90}
-            endAngle={-270}
-            dataKey="value"
-            stroke="none"
-            paddingAngle={segments.length > 1 ? 2 : 0}
-          >
-            {segments.map((s, i) => (
-              <Cell key={i} fill={s.color} />
-            ))}
-          </Pie>
-        </PieChart>
-        <div className="absolute inset-0 flex items-center justify-center">
+    <div className="flex flex-col items-center rounded-2xl bg-gradient-to-br from-navy to-navy/80 p-5 shadow-xl shadow-navy/40">
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-white/50">
+        {label}
+      </p>
+
+      {/* 3-D chart wrapper */}
+      <div className="relative h-[110px] w-[110px]">
+        {/* Tilted donut with drop-shadow for depth */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            transform: "perspective(220px) rotateX(24deg)",
+            transformOrigin: "50% 68%",
+            filter: "drop-shadow(0 12px 18px rgba(0,0,0,0.65))",
+          }}
+        >
+          <PieChart width={110} height={110}>
+            <Pie
+              data={adapted}
+              cx={55}
+              cy={55}
+              innerRadius={32}
+              outerRadius={50}
+              startAngle={90}
+              endAngle={-270}
+              dataKey="value"
+              stroke="none"
+              paddingAngle={adapted.length > 1 ? 3 : 0}
+            >
+              {adapted.map((s, i) => (
+                <Cell key={i} fill={s.color} />
+              ))}
+            </Pie>
+          </PieChart>
+        </div>
+
+        {/* Centre value — flat so it reads clearly */}
+        <div className="absolute inset-0 flex items-center justify-center pb-2">
           <span
-            className="font-mono text-base font-bold"
-            style={{ color: valueColor ?? "#1e3a5f" }}
+            className="font-mono text-[15px] font-bold leading-none"
+            style={{ color: valueColor ?? "#ffffff" }}
           >
             {value}
           </span>
         </div>
       </div>
-      <p className="mt-1 text-center text-[9px] font-bold uppercase tracking-wider text-navy/40">{sub}</p>
+
+      <p className="mt-3 text-center text-[9px] font-bold uppercase tracking-wider text-white/35">
+        {sub}
+      </p>
     </div>
   );
 }
