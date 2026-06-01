@@ -1,6 +1,5 @@
 {
-  "buildCommand": "NITRO_PRESET=vercel npm run build",
+  "buildCommand": "NITRO_PRESET=vercel npm run build && node scripts/vercel-setup.mjs",
   "installCommand": "npm install",
-  "framework": null,
-  "outputDirectory": ".vercel/output"
+  "framework": null
 }
