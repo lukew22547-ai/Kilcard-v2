@@ -5,6 +5,7 @@ import { useHistory } from "@/lib/kilcard/storage";
 import { computeStats, formatToPar, generateInsights, type Insight } from "@/lib/kilcard/stats";
 import type { Round } from "@/lib/kilcard/types";
 import { getAIInsights } from "@/lib/api/golf-insights";
+import { getProStatus } from "@/lib/kilcard/pro";
 
 export const Route = createFileRoute("/summary")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -37,12 +38,7 @@ function SummaryPage() {
       ? sessionStorage.getItem("kilcard:last-finished")
       : null;
     if (raw) {
-      try {
-        setRound(JSON.parse(raw) as Round);
-        return;
-      } catch {
-        /* fall through */
-      }
+      try { setRound(JSON.parse(raw) as Round); return; } catch { /* fall through */ }
     }
     if (history.length) setRound(history[0]);
   }, [history, id]);
@@ -55,7 +51,7 @@ function SummaryPage() {
           <p className="mt-2 text-sm text-navy/60">Finish a round to see your summary here.</p>
           <button
             onClick={() => navigate({ to: "/" })}
-            className="mt-6 bg-navy px-6 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-grass"
+            className="mt-6 rounded-xl bg-navy px-6 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-grass"
           >
             Back Home
           </button>
@@ -64,49 +60,50 @@ function SummaryPage() {
     );
   }
 
+  return <SummaryContent round={round} />;
+}
+
+function SummaryContent({ round }: { round: Round }) {
   const stats = computeStats(round);
-  const [insights, setInsights] = useState<Insight[] | null>(null);
-  const [aiLoading, setAiLoading] = useState(true);
+  const freeInsights = generateInsights(stats);
+  const [isPro] = useState(() => getProStatus());
+  const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(isPro);
 
   useEffect(() => {
-    if (!round) return;
-    const s = computeStats(round);
+    if (!isPro) return;
     getAIInsights({
       data: {
-        holesPlayed: s.holesPlayed,
-        totalScore: s.totalScore,
-        toPar: s.toPar,
-        avgPutts: s.avgPutts,
-        fairwayHitPct: s.fairwayHitPct,
-        fairwayAttempts: s.fairwayAttempts,
-        fairwayMissLeft: s.fairwayMissLeft,
-        fairwayMissRight: s.fairwayMissRight,
-        fairwayMissOB: s.fairwayMissOB,
-        girPct: s.girPct,
-        girMissLeft: s.girMissLeft,
-        girMissRight: s.girMissRight,
-        girMissOB: s.girMissOB,
-        penalties: s.penalties,
+        holesPlayed: stats.holesPlayed,
+        totalScore: stats.totalScore,
+        toPar: stats.toPar,
+        avgPutts: stats.avgPutts,
+        fairwayHitPct: stats.fairwayHitPct,
+        fairwayAttempts: stats.fairwayAttempts,
+        fairwayMissLeft: stats.fairwayMissLeft,
+        fairwayMissRight: stats.fairwayMissRight,
+        fairwayMissOB: stats.fairwayMissOB,
+        girPct: stats.girPct,
+        girMissLeft: stats.girMissLeft,
+        girMissRight: stats.girMissRight,
+        girMissOB: stats.girMissOB,
+        penalties: stats.penalties,
       },
     })
-      .then((ai) => setInsights(ai ?? generateInsights(s)))
-      .catch(() => setInsights(generateInsights(s)))
+      .then((ai) => setAiInsights(ai ?? null))
+      .catch(() => {})
       .finally(() => setAiLoading(false));
-  }, [round?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [round.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stripeLink = (import.meta.env.VITE_STRIPE_LINK as string | undefined) ?? "#";
 
   return (
     <AppShell>
       <section className="animate-reveal">
-        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-grass">
-          Round Complete
-        </p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-grass">Round Complete</p>
         <h2 className="mt-1 font-display text-4xl tracking-tight">{round.course}</h2>
         <p className="mb-8 mt-1 font-mono text-xs text-navy/60">
-          {new Date(round.date).toLocaleString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
+          {new Date(round.date).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric" })}
           {" · "}
           {stats.holesPlayed} holes played
         </p>
@@ -114,127 +111,107 @@ function SummaryPage() {
         {/* Hero score */}
         <div className="mb-10 flex items-end justify-between border-y-2 border-navy/10 py-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-              Total Score
-            </p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">Total Score</p>
             <p className="font-display text-7xl leading-none">{stats.totalScore}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-              To Par
-            </p>
-            <p
-              className={
-                "font-mono text-4xl font-bold " +
-                (stats.toPar < 0 ? "text-grass" : stats.toPar === 0 ? "text-navy" : "text-destructive")
-              }
-            >
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">To Par</p>
+            <p className={"font-mono text-4xl font-bold " + (stats.toPar < 0 ? "text-grass" : stats.toPar === 0 ? "text-navy" : "text-destructive")}>
               {formatToPar(stats.toPar)}
             </p>
           </div>
         </div>
 
+        {/* Stat grid */}
         <div className="mb-10 grid grid-cols-2 gap-px border border-navy/10 bg-navy/10">
-          <StatBlock
-            label="GIR %"
-            value={`${Math.round(stats.girPct * 100)}%`}
-            sub="Greens in regulation"
-          />
-          <StatBlock
-            label="Avg Putts"
-            value={stats.avgPutts.toFixed(2)}
-            sub={`${stats.totalPutts} total`}
-          />
-          <StatBlock
-            label="Fwy Hit"
-            value={`${Math.round(stats.fairwayHitPct * 100)}%`}
-            sub={`${stats.fairwayAttempts} attempts`}
-          />
-          <StatBlock
-            label="Penalties"
-            value={String(stats.penalties)}
-            sub="Cost strokes"
-          />
+          <StatBlock label="GIR %" value={`${Math.round(stats.girPct * 100)}%`} sub="Greens in regulation" />
+          <StatBlock label="Avg Putts" value={stats.avgPutts.toFixed(2)} sub={`${stats.totalPutts} total`} />
+          <StatBlock label="Fwy Hit" value={`${Math.round(stats.fairwayHitPct * 100)}%`} sub={`${stats.fairwayAttempts} attempts`} />
+          <StatBlock label="Penalties" value={String(stats.penalties)} sub="Cost strokes" />
         </div>
 
+        {/* ── FREE: Round Insights ───────────────────────────────────────── */}
+        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">Round Insights</h3>
+        <div className="mb-10 space-y-3">
+          {freeInsights.map((insight, i) => (
+            <InsightCard key={i} insight={insight} />
+          ))}
+        </div>
+
+        {/* ── PRO: AI Caddie ─────────────────────────────────────────────── */}
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.25em]">
-            Caddie Insights
-          </h3>
-          {aiLoading && (
-            <span className="font-mono text-[9px] uppercase tracking-widest text-grass animate-pulse">
-              AI analyzing…
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.25em]">AI Caddie</h3>
+          {isPro && (
+            <span className="rounded-full bg-grass px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-paper">
+              Pro
             </span>
           )}
         </div>
-        <div className="mb-12 space-y-3">
-          {aiLoading ? (
-            [0, 1, 2].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-sm bg-navy/10" />
-            ))
-          ) : (
-            (insights ?? []).map((insight, i) => (
-              <div
-                key={i}
-                className={
-                  "rounded-2xl p-5 " +
-                  (insight.tone === "focus"
-                    ? "bg-navy text-paper"
-                    : "bg-white text-navy ring-1 ring-navy/10")
-                }
-              >
-                <div className="mb-2 flex items-center gap-3">
-                  <span
-                    className={
-                      "size-2 rounded-full " +
-                      (insight.tone === "focus"
-                        ? "bg-grass"
-                        : insight.tone === "win"
-                        ? "bg-grass"
-                        : "bg-navy/30")
-                    }
-                  />
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em]">
-                    {insight.tone === "focus"
-                      ? "Focus Area"
-                      : insight.tone === "win"
-                      ? "Stat Win"
-                      : "Note"}
+
+        {isPro ? (
+          <div className="mb-12 space-y-3">
+            {aiLoading ? (
+              <>
+                <p className="mb-3 font-mono text-[9px] uppercase tracking-widest text-grass animate-pulse">
+                  AI analyzing your round…
+                </p>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-24 animate-pulse rounded-2xl bg-navy/10" />
+                ))}
+              </>
+            ) : aiInsights ? (
+              aiInsights.map((insight, i) => <InsightCard key={i} insight={insight} />)
+            ) : (
+              <p className="text-sm text-navy/50">AI insights unavailable for this round.</p>
+            )}
+          </div>
+        ) : (
+          <div className="mb-12">
+            <div className="rounded-2xl border-2 border-dashed border-navy/15 p-6">
+              <div className="mb-4 flex items-start justify-between">
+                <div>
+                  <p className="font-display text-2xl leading-tight">Unlock AI Caddie</p>
+                  <p className="mt-1 text-sm text-navy/60">
+                    Personalized insights powered by Claude AI
                   </p>
                 </div>
-                <p className="font-display text-lg leading-tight">{insight.title}</p>
-                <p
-                  className={
-                    "mt-2 text-sm leading-relaxed " +
-                    (insight.tone === "focus" ? "text-paper/80" : "text-navy/70")
-                  }
-                >
-                  {insight.body}
-                </p>
+                <span className="shrink-0 rounded-full bg-grass px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-paper">
+                  Pro
+                </span>
               </div>
-            ))
-          )}
-        </div>
+              <ul className="mb-6 space-y-2">
+                {[
+                  "Directional miss analysis — left, right, or OB patterns",
+                  "Specific practice drills based on your data",
+                  "Personalized advice after every round",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-navy/70">
+                    <span className="mt-0.5 shrink-0 text-grass">✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={stripeLink}
+                className="block w-full rounded-xl bg-navy py-4 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-grass touch-manipulation"
+              >
+                Upgrade to AI Caddie
+              </a>
+            </div>
+          </div>
+        )}
 
-        {/* Hole-by-hole scorecard */}
-        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">
-          Scorecard
-        </h3>
+        {/* Scorecard */}
+        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">Scorecard</h3>
         <div className="mb-12 overflow-x-auto bg-white p-4 ring-1 ring-navy/10">
           <Scorecard round={round} />
         </div>
 
         <div className="flex gap-2">
-          <Link
-            to="/"
-            className="flex-1 border border-navy/15 py-4 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-navy/70 hover:bg-navy/5"
-          >
+          <Link to="/" className="flex-1 rounded-xl border border-navy/15 py-4 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-navy/70 hover:bg-navy/5">
             Home
           </Link>
-          <Link
-            to="/history"
-            className="flex-1 bg-navy py-4 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-grass"
-          >
+          <Link to="/history" className="flex-1 rounded-xl bg-navy py-4 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-grass">
             View History
           </Link>
         </div>
@@ -243,28 +220,39 @@ function SummaryPage() {
   );
 }
 
+function InsightCard({ insight }: { insight: Insight }) {
+  return (
+    <div className={"rounded-2xl p-5 " + (insight.tone === "focus" ? "bg-navy text-paper" : "bg-white text-navy ring-1 ring-navy/10")}>
+      <div className="mb-2 flex items-center gap-3">
+        <span className={"size-2 rounded-full " + (insight.tone === "focus" ? "bg-grass" : insight.tone === "win" ? "bg-grass" : "bg-navy/30")} />
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em]">
+          {insight.tone === "focus" ? "Focus Area" : insight.tone === "win" ? "Stat Win" : "Note"}
+        </p>
+      </div>
+      <p className="font-display text-lg leading-tight">{insight.title}</p>
+      <p className={"mt-2 text-sm leading-relaxed " + (insight.tone === "focus" ? "text-paper/80" : "text-navy/70")}>
+        {insight.body}
+      </p>
+    </div>
+  );
+}
+
 function StatBlock({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="bg-paper p-5">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-navy/50">
-        {label}
-      </p>
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-navy/50">{label}</p>
       <p className="font-mono text-3xl font-bold">{value}</p>
-      <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-navy/40">
-        {sub}
-      </p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-navy/40">{sub}</p>
     </div>
   );
 }
 
 function Scorecard({ round }: { round: Round }) {
   const is9 = round.holes.length === 9;
-  const front = round.holes.slice(0, 9);
-  const back = round.holes.slice(9);
   return (
     <div className="space-y-3 font-mono text-[10px]">
-      <Nine label={is9 ? "9 Holes" : "Front"} holes={front} />
-      {!is9 && <Nine label="Back" holes={back} />}
+      <Nine label={is9 ? "9 Holes" : "Front"} holes={round.holes.slice(0, 9)} />
+      {!is9 && <Nine label="Back" holes={round.holes.slice(9)} />}
     </div>
   );
 }
