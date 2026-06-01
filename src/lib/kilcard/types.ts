@@ -18,18 +18,32 @@ export interface Round {
   finished: boolean;
 }
 
+export const DEFAULT_PARS_9: Array<3 | 4 | 5> = [4, 4, 3, 5, 4, 4, 3, 4, 5];
+
 export const DEFAULT_PARS: Array<3 | 4 | 5> = [
   4, 4, 3, 5, 4, 4, 3, 4, 5,
   4, 3, 4, 5, 4, 4, 3, 4, 5,
 ];
 
-export function makeRound(course: string): Round {
+function generateId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // fallback for non-secure HTTP contexts
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+export function makeRound(course: string, holes: 9 | 18 = 18): Round {
+  const pars = holes === 9 ? DEFAULT_PARS_9 : DEFAULT_PARS;
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     course: course.trim() || "Untitled Course",
     date: new Date().toISOString(),
     finished: false,
-    holes: DEFAULT_PARS.map((par, i) => ({
+    holes: pars.map((par, i) => ({
       hole: i + 1,
       par,
       score: par,

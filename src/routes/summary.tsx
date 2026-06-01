@@ -217,12 +217,13 @@ function StatBlock({ label, value, sub }: { label: string; value: string; sub: s
 }
 
 function Scorecard({ round }: { round: Round }) {
+  const is9 = round.holes.length === 9;
   const front = round.holes.slice(0, 9);
   const back = round.holes.slice(9);
   return (
     <div className="space-y-3 font-mono text-[10px]">
-      <Nine label="Front" holes={front} />
-      <Nine label="Back" holes={back} />
+      <Nine label={is9 ? "9 Holes" : "Front"} holes={front} />
+      {!is9 && <Nine label="Back" holes={back} />}
     </div>
   );
 }

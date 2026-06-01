@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import kilcardLogo from "@/assets/KilCard.png";
 
 const NAV = [
   { to: "/", label: "Round" },
@@ -12,11 +13,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-paper text-navy">
       <header className="sticky top-0 z-20 border-b border-navy/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center bg-navy">
-              <span className="size-3 bg-grass" />
-            </span>
-            <span className="font-display text-2xl leading-none">KILCARD</span>
+          <Link to="/" className="flex items-center">
+            <img src={kilcardLogo} alt="Kilcard" className="h-20 w-auto mix-blend-multiply" />
           </Link>
           <nav className="flex gap-1 text-[10px] font-bold uppercase tracking-[0.2em]">
             {NAV.map((n) => {

@@ -22,10 +22,11 @@ function Index() {
   const [active, setActive] = useActiveRound();
   const history = useHistory();
   const [course, setCourse] = useState("");
+  const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const last = history[0];
 
   function startRound() {
-    const round = makeRound(course || "Untitled Course");
+    const round = makeRound(course || "Untitled Course", holeCount);
     setActive(round);
     setCourse("");
     navigate({ to: "/round" });
@@ -48,12 +49,32 @@ function Index() {
         {active ? (
           <ActiveRoundCard
             holesPlayed={computeStats(active).holesPlayed}
+            totalHoles={active.holes.length}
             course={active.course}
             onResume={() => navigate({ to: "/round" })}
             onDiscard={() => setActive(null)}
           />
         ) : (
           <div className="space-y-3">
+            <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
+              Holes
+            </label>
+            <div className="flex">
+              {([9, 18] as const).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setHoleCount(n)}
+                  className={
+                    "flex-1 py-3 text-sm font-bold uppercase tracking-[0.25em] transition-colors " +
+                    (holeCount === n
+                      ? "bg-navy text-paper"
+                      : "border border-navy/15 text-navy/60 hover:bg-navy/5")
+                  }
+                >
+                  {n} Holes
+                </button>
+              ))}
+            </div>
             <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
               Course
             </label>
@@ -105,11 +126,13 @@ function Index() {
 
 function ActiveRoundCard({
   holesPlayed,
+  totalHoles,
   course,
   onResume,
   onDiscard,
 }: {
   holesPlayed: number;
+  totalHoles: number;
   course: string;
   onResume: () => void;
   onDiscard: () => void;
@@ -121,7 +144,7 @@ function ActiveRoundCard({
       </p>
       <p className="mt-1 font-display text-2xl">{course}</p>
       <p className="text-xs text-navy/60">
-        {holesPlayed} of 18 holes logged
+        {holesPlayed} of {totalHoles} holes logged
       </p>
       <div className="mt-4 flex gap-2">
         <button

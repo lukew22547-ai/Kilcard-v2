@@ -60,7 +60,8 @@ function RoundPage() {
   }
 
   function next() {
-    if (holeIdx < 17) setHoleIdx(holeIdx + 1);
+    if (!round) return;
+    if (holeIdx < round.holes.length - 1) setHoleIdx(holeIdx + 1);
   }
   function prev() {
     if (holeIdx > 0) setHoleIdx(holeIdx - 1);
@@ -72,7 +73,7 @@ function RoundPage() {
     pushHistory(finished);
     setRound(null);
     sessionStorage.setItem("kilcard:last-finished", JSON.stringify(finished));
-    navigate({ to: "/summary" });
+    navigate({ to: "/summary", search: { id: null } });
   }
 
   return (
@@ -85,7 +86,7 @@ function RoundPage() {
               {round.course}
             </p>
             <p className="mt-1 font-mono text-xs text-navy/60">
-              {stats.holesPlayed}/18 logged{stats.holesPlayed > 0 ? ` · ${formatToPar(stats.toPar)} thru ${stats.holesPlayed}` : ""}
+              {stats.holesPlayed}/{round.holes.length} logged{stats.holesPlayed > 0 ? ` · ${formatToPar(stats.toPar)} thru ${stats.holesPlayed}` : ""}
             </p>
           </div>
           <button
@@ -228,7 +229,7 @@ function RoundPage() {
           >
             ← Prev
           </button>
-          {holeIdx === 17 ? (
+          {holeIdx === round.holes.length - 1 ? (
             <button
               onClick={finish}
               className="col-span-2 bg-grass py-4 text-[11px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-navy"
