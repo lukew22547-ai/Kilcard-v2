@@ -115,34 +115,6 @@ function RoundPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
-            <span className="text-xs font-bold uppercase tracking-widest">Par</span>
-            <div className="flex gap-1">
-              {([3, 4, 5] as const).map((p) => {
-                const selected = current.par === p;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      const delta = p - current.par;
-                      patch({
-                        par: p,
-                        score: Math.max(1, current.score + delta),
-                        // par 3 has no fairway concept
-                        fairway: p === 3 ? null : current.fairway,
-                      });
-                    }}
-                    className={
-                      "grid size-11 place-items-center text-[11px] font-bold transition-colors rounded-xl touch-manipulation " +
-                      (selected ? "bg-grass text-paper" : "bg-white/5 hover:bg-white/15")
-                    }
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           <div className="mb-3 flex flex-col items-center">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.3em] opacity-60">
