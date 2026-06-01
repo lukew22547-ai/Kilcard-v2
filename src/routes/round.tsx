@@ -77,34 +77,35 @@ function RoundPage() {
   }
 
   return (
-    <AppShell>
-      <section className="animate-reveal space-y-6">
-        {/* Mini scorecard strip */}
-        <div className="flex items-center justify-between">
+    <AppShell fullHeight>
+      <section className="animate-reveal flex flex-col h-full gap-3 py-4">
+        {/* Top stats bubble */}
+        <div className="shrink-0 bg-navy rounded-2xl px-5 py-3 text-paper flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-grass">
-              {round.course}
-            </p>
-            <p className="mt-1 font-mono text-xs text-navy/60">
-              {stats.holesPlayed}/{round.holes.length} logged{stats.holesPlayed > 0 ? ` · ${formatToPar(stats.toPar)} thru ${stats.holesPlayed}` : ""}
+            <p className="font-display text-2xl tracking-wide leading-none">{round.course}</p>
+            <p className="mt-1 font-mono text-xs text-paper/50">
+              {stats.holesPlayed}/{round.holes.length} holes
+              {stats.holesPlayed > 0 ? ` · ${formatToPar(stats.toPar)} thru ${stats.holesPlayed}` : ""}
             </p>
           </div>
           <button
             onClick={finish}
-            className="border border-navy/15 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.25em] text-navy/70 hover:bg-navy hover:text-paper"
+            className="rounded-xl border border-white/20 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.25em] text-paper/70 hover:bg-white/10 touch-manipulation"
           >
             Finish
           </button>
         </div>
 
-        <HoleStrip
-          holes={round.holes}
-          current={holeIdx}
-          onSelect={setHoleIdx}
-        />
+        <div className="shrink-0">
+          <HoleStrip
+            holes={round.holes}
+            current={holeIdx}
+            onSelect={setHoleIdx}
+          />
+        </div>
 
         {/* Hole card */}
-        <div className="bg-navy p-7 text-paper rounded-3xl">
+        <div className="flex-1 min-h-0 overflow-y-auto bg-navy p-7 text-paper rounded-3xl">
           <div className="mb-8 flex items-center justify-between">
             <div className="font-display text-3xl tracking-wide">
               Hole {String(current.hole).padStart(2, "0")}
@@ -248,7 +249,7 @@ function RoundPage() {
           </Row>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="shrink-0 grid grid-cols-3 gap-2">
           <button
             onClick={prev}
             disabled={holeIdx === 0}

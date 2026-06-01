@@ -7,11 +7,11 @@ const NAV = [
   { to: "/history", label: "History" },
 ];
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, fullHeight }: { children: ReactNode; fullHeight?: boolean }) {
   const { location } = useRouterState();
   return (
-    <div className="min-h-screen bg-paper text-navy">
-      <header className="sticky top-0 z-20 border-b border-navy/10 bg-paper/85 backdrop-blur">
+    <div className={fullHeight ? "h-dvh flex flex-col bg-paper text-navy" : "min-h-screen bg-paper text-navy"}>
+      <header className="shrink-0 sticky top-0 z-20 border-b border-navy/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center">
             <img src={kilcardLogo} alt="Kilcard" className="h-20 w-auto mix-blend-multiply" />
@@ -37,10 +37,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-md px-6 pb-24 pt-8">{children}</main>
-      <footer className="mx-auto max-w-md px-6 pb-10 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-navy/30">
-        Track · Analyze · Improve
-      </footer>
+      {fullHeight ? (
+        <main className="flex-1 min-h-0 mx-auto w-full max-w-md px-4 overflow-hidden">{children}</main>
+      ) : (
+        <>
+          <main className="mx-auto max-w-md px-6 pb-24 pt-8">{children}</main>
+          <footer className="mx-auto max-w-md px-6 pb-10 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-navy/30">
+            Track · Analyze · Improve
+          </footer>
+        </>
+      )}
     </div>
   );
 }
