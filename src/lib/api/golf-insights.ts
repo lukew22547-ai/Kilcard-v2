@@ -16,6 +16,8 @@ const InputSchema = z.object({
   girMissLeft: z.number(),
   girMissRight: z.number(),
   girMissOB: z.number(),
+  upAndDownPct: z.number(),
+  upAndDownAttempts: z.number(),
   penalties: z.number(),
 });
 
@@ -45,6 +47,10 @@ export const getAIInsights = createServerFn({ method: "POST" })
         ? ` | misses — left: ${data.girMissLeft}, right: ${data.girMissRight}, OB: ${data.girMissOB}`
         : "");
 
+    const udLine = data.upAndDownAttempts > 0
+      ? `Up & Down: ${Math.round(data.upAndDownPct * 100)}% (${data.upAndDownAttempts} attempts)`
+      : null;
+
     const prompt = `You are an expert golf caddie analyst. Analyze this round and return exactly 3 concise, specific insights as a JSON array.
 
 Round data:
@@ -52,7 +58,7 @@ Round data:
 - Score: ${data.totalScore} (${data.toPar > 0 ? "+" : ""}${data.toPar} to par)
 ${fwLine ? `- ${fwLine}` : ""}
 - ${girLine}
-- Avg putts per hole: ${data.avgPutts.toFixed(2)}
+${udLine ? `- ${udLine}` : ""}- Avg putts per hole: ${data.avgPutts.toFixed(2)}
 - Penalty strokes: ${data.penalties}
 
 Return ONLY a valid JSON array — no markdown, no explanation:

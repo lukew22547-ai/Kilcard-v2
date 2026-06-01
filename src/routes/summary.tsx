@@ -88,6 +88,8 @@ function SummaryContent({ round }: { round: Round }) {
         girMissLeft: stats.girMissLeft,
         girMissRight: stats.girMissRight,
         girMissOB: stats.girMissOB,
+        upAndDownPct: stats.upAndDownPct,
+        upAndDownAttempts: stats.upAndDownAttempts,
         penalties: stats.penalties,
       },
     })
@@ -181,6 +183,26 @@ function SummaryContent({ round }: { round: Round }) {
             }
             valueColor={stats.penalties === 0 ? "#22c55e" : "#ef4444"}
           />
+        </div>
+
+        {/* Up & Down — full-width row */}
+        <div className="mb-10 flex justify-center">
+          <div className="w-[calc(50%-6px)]">
+            <PieStat
+              label="Up & Down"
+              value={stats.upAndDownAttempts > 0 ? `${Math.round(stats.upAndDownPct * 100)}%` : "—"}
+              sub={`${stats.upAndDownAttempts} chances`}
+              segments={
+                stats.upAndDownAttempts === 0
+                  ? [{ value: 1, color: "#e2e8f0" }]
+                  : [
+                      { value: stats.upAndDownPct, color: "#f97316" },
+                      { value: 1 - stats.upAndDownPct, color: "#e2e8f0" },
+                    ]
+              }
+              valueColor="#f97316"
+            />
+          </div>
         </div>
 
         {/* ── FREE: Round Insights ───────────────────────────────────────── */}
