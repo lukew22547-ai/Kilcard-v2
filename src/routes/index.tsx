@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppShell } from "@/components/kilcard/AppShell";
 import { useActiveRound, useHistory } from "@/lib/kilcard/storage";
 import { computeStats, formatToPar } from "@/lib/kilcard/stats";
 import { makeRound } from "@/lib/kilcard/types";
+import { type CourseInfo, searchCourses } from "@/lib/kilcard/courses";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,14 +22,34 @@ function Index() {
   const navigate = useNavigate();
   const [active, setActive] = useActiveRound();
   const history = useHistory();
-  const [course, setCourse] = useState("");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<CourseInfo | null>(null);
+  const [showDrop, setShowDrop] = useState(false);
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
+  const inputRef = useRef<HTMLInputElement>(null);
   const last = history[0];
 
+  const suggestions = searchCourses(query);
+
+  function pickCourse(c: CourseInfo) {
+    setSelected(c);
+    setQuery(c.name);
+    setHoleCount(c.holes);
+    setShowDrop(false);
+    inputRef.current?.blur();
+  }
+
+  function clearSelection() {
+    setSelected(null);
+  }
+
   function startRound() {
-    const round = makeRound(course || "Untitled Course", holeCount);
+    const name = query.trim() || "Untitled Course";
+    const count = selected?.holes ?? holeCount;
+    const round = makeRound(name, count, selected?.pars);
     setActive(round);
-    setCourse("");
+    setQuery("");
+    setSelected(null);
     navigate({ to: "/round" });
   }
 
@@ -78,13 +99,47 @@ function Index() {
             <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
               Course
             </label>
-            <input
-              value={course}
-              onChange={(e) => setCourse(e.target.value)}
-              maxLength={60}
-              placeholder="St Andrews / Old"
-              className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  clearSelection();
+                  setShowDrop(true);
+                }}
+                onFocus={() => setShowDrop(true)}
+                onBlur={() => setTimeout(() => setShowDrop(false), 150)}
+                maxLength={60}
+                placeholder="Search Arkansas courses…"
+                className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
+              />
+              {selected && (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-grass px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-paper">
+                  Par {selected.pars.reduce((a, b) => a + b, 0)} · {selected.holes}h
+                </span>
+              )}
+              {showDrop && suggestions.length > 0 && (
+                <div className="absolute z-20 w-full overflow-hidden rounded-b-xl border border-t-0 border-navy/15 bg-white shadow-lg">
+                  {suggestions.map((c) => (
+                    <button
+                      key={c.id}
+                      onMouseDown={() => pickCourse(c)}
+                      onTouchStart={() => pickCourse(c)}
+                      className="flex w-full items-center justify-between border-b border-navy/5 px-4 py-3 text-left last:border-0 hover:bg-navy/5"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-navy">{c.name}</p>
+                        <p className="text-xs text-navy/50">{c.city}, AR</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-grass/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-grass">
+                        Par {c.pars.reduce((a, b) => a + b, 0)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               onClick={startRound}
               className="w-full bg-navy py-5 text-sm font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-grass"

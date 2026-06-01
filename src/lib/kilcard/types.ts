@@ -39,8 +39,8 @@ function generateId(): string {
   });
 }
 
-export function makeRound(course: string, holes: 9 | 18 = 18): Round {
-  const pars = holes === 9 ? DEFAULT_PARS_9 : DEFAULT_PARS;
+export function makeRound(course: string, holes: 9 | 18 = 18, customPars?: Array<3 | 4 | 5>): Round {
+  const pars = customPars ?? (holes === 9 ? DEFAULT_PARS_9 : DEFAULT_PARS);
   return {
     id: generateId(),
     course: course.trim() || "Untitled Course",
