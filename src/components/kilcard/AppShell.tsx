@@ -12,9 +12,9 @@ export function AppShell({ children, fullHeight }: { children: ReactNode; fullHe
   return (
     <div className={fullHeight ? "h-dvh flex flex-col bg-paper text-navy" : "min-h-screen bg-paper text-navy"}>
       <header className="shrink-0 sticky top-0 z-20 border-b border-navy/10 bg-paper/85 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center justify-between px-6 py-4">
+        <div className={`mx-auto flex max-w-md items-center justify-between px-6 ${fullHeight ? "py-1" : "py-4"}`}>
           <Link to="/" className="flex items-center">
-            <img src={kilcardLogo} alt="Kilcard" className="h-20 w-auto mix-blend-multiply" />
+            <img src={kilcardLogo} alt="Kilcard" className={`${fullHeight ? "h-10" : "h-20"} w-auto mix-blend-multiply`} />
           </Link>
           <nav className="flex gap-1 text-[10px] font-bold uppercase tracking-[0.2em]">
             {NAV.map((n) => {
@@ -24,7 +24,7 @@ export function AppShell({ children, fullHeight }: { children: ReactNode; fullHe
                   key={n.to}
                   to={n.to}
                   className={
-                    "px-3 py-2 transition-colors " +
+                    "px-3 py-2 transition-colors rounded-lg " +
                     (active
                       ? "bg-navy text-paper"
                       : "text-navy/50 hover:text-navy")

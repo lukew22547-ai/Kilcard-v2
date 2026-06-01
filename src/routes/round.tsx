@@ -376,7 +376,7 @@ function HoleStrip({
               key={h.hole}
               onClick={() => onSelect(i)}
               className={
-                "flex h-12 w-9 shrink-0 flex-col items-center justify-center font-mono text-[10px] transition-colors " +
+                "flex h-12 w-9 shrink-0 flex-col items-center justify-center font-mono text-[10px] transition-colors rounded-xl " +
                 (active
                   ? "bg-navy text-paper"
                   : played
