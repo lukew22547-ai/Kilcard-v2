@@ -10,7 +10,13 @@ export interface RoundStats {
   avgPutts: number;
   fairwayHitPct: number; // 0..1
   fairwayAttempts: number;
+  fairwayMissLeft: number;
+  fairwayMissRight: number;
+  fairwayMissOB: number;
   girPct: number; // 0..1
+  girMissLeft: number;
+  girMissRight: number;
+  girMissOB: number;
   penalties: number;
 }
 
@@ -26,8 +32,10 @@ export function computeStats(round: Round): RoundStats {
   const totalPutts = puttsHoles.reduce((s, h) => s + (h.putts ?? 0), 0);
   const fwAttempts = played.filter((h) => h.par > 3);
   const fwHits = fwAttempts.filter((h) => h.fairway === "yes").length;
+  const fwMissed = fwAttempts.filter((h) => h.fairway === "no");
   const girHoles = played.filter((h) => h.gir !== null);
   const girHits = girHoles.filter((h) => h.gir === "yes").length;
+  const girMissed = girHoles.filter((h) => h.gir === "no");
   const penalties = played.reduce((s, h) => s + h.penalties, 0);
 
   return {
@@ -40,7 +48,13 @@ export function computeStats(round: Round): RoundStats {
     avgPutts: puttsHoles.length ? totalPutts / puttsHoles.length : 0,
     fairwayHitPct: fwAttempts.length ? fwHits / fwAttempts.length : 0,
     fairwayAttempts: fwAttempts.length,
+    fairwayMissLeft: fwMissed.filter((h) => h.fairwayMiss === "left").length,
+    fairwayMissRight: fwMissed.filter((h) => h.fairwayMiss === "right").length,
+    fairwayMissOB: fwMissed.filter((h) => h.fairwayMiss === "ob").length,
     girPct: girHoles.length ? girHits / girHoles.length : 0,
+    girMissLeft: girMissed.filter((h) => h.girMiss === "left").length,
+    girMissRight: girMissed.filter((h) => h.girMiss === "right").length,
+    girMissOB: girMissed.filter((h) => h.girMiss === "ob").length,
     penalties,
   };
 }

@@ -2,8 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/kilcard/AppShell";
 import { useHistory } from "@/lib/kilcard/storage";
-import { computeStats, formatToPar, generateInsights } from "@/lib/kilcard/stats";
+import { computeStats, formatToPar, generateInsights, type Insight } from "@/lib/kilcard/stats";
 import type { Round } from "@/lib/kilcard/types";
+import { getAIInsights } from "@/lib/api/golf-insights";
 
 export const Route = createFileRoute("/summary")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -64,7 +65,34 @@ function SummaryPage() {
   }
 
   const stats = computeStats(round);
-  const insights = generateInsights(stats);
+  const [insights, setInsights] = useState<Insight[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(true);
+
+  useEffect(() => {
+    if (!round) return;
+    const s = computeStats(round);
+    getAIInsights({
+      data: {
+        holesPlayed: s.holesPlayed,
+        totalScore: s.totalScore,
+        toPar: s.toPar,
+        avgPutts: s.avgPutts,
+        fairwayHitPct: s.fairwayHitPct,
+        fairwayAttempts: s.fairwayAttempts,
+        fairwayMissLeft: s.fairwayMissLeft,
+        fairwayMissRight: s.fairwayMissRight,
+        fairwayMissOB: s.fairwayMissOB,
+        girPct: s.girPct,
+        girMissLeft: s.girMissLeft,
+        girMissRight: s.girMissRight,
+        girMissOB: s.girMissOB,
+        penalties: s.penalties,
+      },
+    })
+      .then((ai) => setInsights(ai ?? generateInsights(s)))
+      .catch(() => setInsights(generateInsights(s)))
+      .finally(() => setAiLoading(false));
+  }, [round?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AppShell>
@@ -129,50 +157,63 @@ function SummaryPage() {
           />
         </div>
 
-        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">
-          Caddie Insights
-        </h3>
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.25em]">
+            Caddie Insights
+          </h3>
+          {aiLoading && (
+            <span className="font-mono text-[9px] uppercase tracking-widest text-grass animate-pulse">
+              AI analyzing…
+            </span>
+          )}
+        </div>
         <div className="mb-12 space-y-3">
-          {insights.map((insight, i) => (
-            <div
-              key={i}
-              className={
-                "p-5 " +
-                (insight.tone === "focus"
-                  ? "bg-navy text-paper"
-                  : "bg-white text-navy ring-1 ring-navy/10")
-              }
-            >
-              <div className="mb-2 flex items-center gap-3">
-                <span
-                  className={
-                    "size-2 " +
-                    (insight.tone === "focus"
-                      ? "bg-grass"
-                      : insight.tone === "win"
-                      ? "bg-grass"
-                      : "bg-navy/30")
-                  }
-                />
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em]">
-                  {insight.tone === "focus"
-                    ? "Focus Area"
-                    : insight.tone === "win"
-                    ? "Stat Win"
-                    : "Note"}
-                </p>
-              </div>
-              <p className="font-display text-lg leading-tight">{insight.title}</p>
-              <p
+          {aiLoading ? (
+            [0, 1, 2].map((i) => (
+              <div key={i} className="h-24 animate-pulse rounded-sm bg-navy/10" />
+            ))
+          ) : (
+            (insights ?? []).map((insight, i) => (
+              <div
+                key={i}
                 className={
-                  "mt-2 text-sm leading-relaxed " +
-                  (insight.tone === "focus" ? "text-paper/80" : "text-navy/70")
+                  "rounded-2xl p-5 " +
+                  (insight.tone === "focus"
+                    ? "bg-navy text-paper"
+                    : "bg-white text-navy ring-1 ring-navy/10")
                 }
               >
-                {insight.body}
-              </p>
-            </div>
-          ))}
+                <div className="mb-2 flex items-center gap-3">
+                  <span
+                    className={
+                      "size-2 rounded-full " +
+                      (insight.tone === "focus"
+                        ? "bg-grass"
+                        : insight.tone === "win"
+                        ? "bg-grass"
+                        : "bg-navy/30")
+                    }
+                  />
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em]">
+                    {insight.tone === "focus"
+                      ? "Focus Area"
+                      : insight.tone === "win"
+                      ? "Stat Win"
+                      : "Note"}
+                  </p>
+                </div>
+                <p className="font-display text-lg leading-tight">{insight.title}</p>
+                <p
+                  className={
+                    "mt-2 text-sm leading-relaxed " +
+                    (insight.tone === "focus" ? "text-paper/80" : "text-navy/70")
+                  }
+                >
+                  {insight.body}
+                </p>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Hole-by-hole scorecard */}
