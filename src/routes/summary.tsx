@@ -4,8 +4,8 @@ import { AppShell } from "@/components/kilcard/AppShell";
 import { useHistory } from "@/lib/kilcard/storage";
 import { computeStats, formatToPar, generateInsights, type Insight } from "@/lib/kilcard/stats";
 import type { Round } from "@/lib/kilcard/types";
-import { getAIInsights } from "@/lib/api/golf-insights";
 import { getProStatus } from "@/lib/kilcard/pro";
+import { getAnthropicKey, saveAnthropicKey } from "@/lib/kilcard/settings";
 import { Cell, Pie, PieChart } from "recharts";
 
 export const Route = createFileRoute("/summary")({
@@ -68,35 +68,61 @@ function SummaryContent({ round }: { round: Round }) {
   const stats = computeStats(round);
   const freeInsights = generateInsights(stats);
   const [isPro] = useState(() => getProStatus());
+  const [apiKey, setApiKey] = useState(() => getAnthropicKey());
+  const [keyInput, setKeyInput] = useState("");
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
-  const [aiLoading, setAiLoading] = useState(isPro);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
-    if (!isPro) return;
-    getAIInsights({
-      data: {
-        holesPlayed: stats.holesPlayed,
-        totalScore: stats.totalScore,
-        toPar: stats.toPar,
-        avgPutts: stats.avgPutts,
-        fairwayHitPct: stats.fairwayHitPct,
-        fairwayAttempts: stats.fairwayAttempts,
-        fairwayMissLeft: stats.fairwayMissLeft,
-        fairwayMissRight: stats.fairwayMissRight,
-        fairwayMissOB: stats.fairwayMissOB,
-        girPct: stats.girPct,
-        girMissLeft: stats.girMissLeft,
-        girMissRight: stats.girMissRight,
-        girMissOB: stats.girMissOB,
-        upAndDownPct: stats.upAndDownPct,
-        upAndDownAttempts: stats.upAndDownAttempts,
-        penalties: stats.penalties,
+    if (!isPro || !apiKey) return;
+    setAiLoading(true);
+
+    const fwMissTotal = stats.fairwayMissLeft + stats.fairwayMissRight + stats.fairwayMissOB;
+    const girMissTotal = stats.girMissLeft + stats.girMissRight + stats.girMissOB;
+
+    const prompt = `You are an expert golf caddie analyst. Analyze this round and return exactly 3 concise, specific insights as a JSON array.
+
+Round data:
+- Holes: ${stats.holesPlayed}, Score: ${stats.totalScore} (${stats.toPar > 0 ? "+" : ""}${stats.toPar})
+${stats.fairwayAttempts > 0 ? `- Fairways: ${Math.round(stats.fairwayHitPct * 100)}% of ${stats.fairwayAttempts}${fwMissTotal > 0 ? ` | misses — left: ${stats.fairwayMissLeft}, right: ${stats.fairwayMissRight}, OB: ${stats.fairwayMissOB}` : ""}` : ""}
+- GIR: ${Math.round(stats.girPct * 100)}%${girMissTotal > 0 ? ` | misses — left: ${stats.girMissLeft}, right: ${stats.girMissRight}, OB: ${stats.girMissOB}` : ""}
+${stats.upAndDownAttempts > 0 ? `- Up & Down: ${Math.round(stats.upAndDownPct * 100)}% (${stats.upAndDownAttempts} attempts)` : ""}
+- Avg putts: ${stats.avgPutts.toFixed(2)}, Penalties: ${stats.penalties}
+
+Return ONLY valid JSON, no markdown:
+[{"tone":"focus","title":"...","body":"..."},...]
+
+Rules: tone = "focus" | "win" | "neutral". Body = 1-2 direct sentences. Use miss direction data for specific advice. Exactly 3 insights.`;
+
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-allow-browser": "true",
       },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
+        messages: [{ role: "user", content: prompt }],
+      }),
     })
-      .then((ai) => setAiInsights(ai ?? null))
+      .then((r) => r.json())
+      .then((data) => {
+        const text: string = data?.content?.[0]?.text?.trim() ?? "";
+        try { setAiInsights(JSON.parse(text) as Insight[]); } catch { /* leave null */ }
+      })
       .catch(() => {})
       .finally(() => setAiLoading(false));
-  }, [round.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [round.id, apiKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function saveKey() {
+    const k = keyInput.trim();
+    saveAnthropicKey(k);
+    setApiKey(k);
+    setKeyInput("");
+  }
 
   const stripeLink = (import.meta.env.VITE_STRIPE_LINK as string | undefined) ?? "#";
 
@@ -225,7 +251,28 @@ function SummaryContent({ round }: { round: Round }) {
 
         {isPro ? (
           <div className="mb-12 space-y-3">
-            {aiLoading ? (
+            {!apiKey ? (
+              /* Key entry form */
+              <div className="rounded-2xl border border-navy/15 p-5 space-y-3">
+                <p className="text-sm text-navy/70">Paste your Anthropic API key to enable AI insights. It's saved only on this device.</p>
+                <input
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  placeholder="sk-ant-..."
+                  className="w-full rounded-xl border border-navy/15 bg-white px-4 py-3 font-mono text-xs text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
+                />
+                <button
+                  onClick={saveKey}
+                  disabled={!keyInput.trim().startsWith("sk-")}
+                  className="w-full rounded-xl bg-navy py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-grass disabled:opacity-40 touch-manipulation"
+                >
+                  Save & Analyze
+                </button>
+                <p className="text-center text-[9px] text-navy/40">
+                  Get a key at console.anthropic.com → API Keys
+                </p>
+              </div>
+            ) : aiLoading ? (
               <>
                 <p className="mb-3 font-mono text-[9px] uppercase tracking-widest text-grass animate-pulse">
                   AI analyzing your round…
@@ -235,9 +282,17 @@ function SummaryContent({ round }: { round: Round }) {
                 ))}
               </>
             ) : aiInsights ? (
-              aiInsights.map((insight, i) => <InsightCard key={i} insight={insight} />)
+              <>
+                {aiInsights.map((insight, i) => <InsightCard key={i} insight={insight} />)}
+                <button
+                  onClick={() => { saveAnthropicKey(""); setApiKey(""); setAiInsights(null); }}
+                  className="mt-1 text-[9px] text-navy/30 underline"
+                >
+                  Remove API key
+                </button>
+              </>
             ) : (
-              <p className="text-sm text-navy/50">AI insights unavailable for this round.</p>
+              <p className="text-sm text-navy/50">AI insights unavailable — check your API key has credits.</p>
             )}
           </div>
         ) : (
