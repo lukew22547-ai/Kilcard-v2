@@ -6,6 +6,7 @@ import { computeStats, formatToPar, generateInsights, type Insight } from "@/lib
 import type { Round } from "@/lib/kilcard/types";
 import { getAIInsights } from "@/lib/api/golf-insights";
 import { getProStatus } from "@/lib/kilcard/pro";
+import { Cell, Pie, PieChart } from "recharts";
 
 export const Route = createFileRoute("/summary")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -122,12 +123,64 @@ function SummaryContent({ round }: { round: Round }) {
           </div>
         </div>
 
-        {/* Stat grid */}
-        <div className="mb-10 grid grid-cols-2 gap-px border border-navy/10 bg-navy/10">
-          <StatBlock label="GIR %" value={`${Math.round(stats.girPct * 100)}%`} sub="Greens in regulation" />
-          <StatBlock label="Avg Putts" value={stats.avgPutts.toFixed(2)} sub={`${stats.totalPutts} total`} />
-          <StatBlock label="Fwy Hit" value={`${Math.round(stats.fairwayHitPct * 100)}%`} sub={`${stats.fairwayAttempts} attempts`} />
-          <StatBlock label="Penalties" value={String(stats.penalties)} sub="Cost strokes" />
+        {/* Stat pie charts */}
+        <div className="mb-10 grid grid-cols-2 gap-3">
+          <PieStat
+            label="GIR"
+            value={`${Math.round(stats.girPct * 100)}%`}
+            sub="Greens in Reg"
+            segments={
+              stats.holesPlayed < 1
+                ? [{ value: 1, color: "#e2e8f0" }]
+                : [
+                    { value: stats.girPct, color: "#16a34a" },
+                    { value: 1 - stats.girPct, color: "#e2e8f0" },
+                  ]
+            }
+            valueColor="#16a34a"
+          />
+          <PieStat
+            label="Avg Putts"
+            value={stats.avgPutts > 0 ? stats.avgPutts.toFixed(2) : "—"}
+            sub={`${stats.totalPutts} total`}
+            segments={
+              stats.avgPutts === 0
+                ? [{ value: 1, color: "#e2e8f0" }]
+                : [
+                    { value: Math.min(stats.avgPutts / 3, 1), color: puttColor(stats.avgPutts) },
+                    { value: Math.max(0, 1 - stats.avgPutts / 3), color: "#e2e8f0" },
+                  ]
+            }
+            valueColor={puttColor(stats.avgPutts)}
+          />
+          <PieStat
+            label="Fairway"
+            value={stats.fairwayAttempts > 0 ? `${Math.round(stats.fairwayHitPct * 100)}%` : "—"}
+            sub={`${stats.fairwayAttempts} attempts`}
+            segments={
+              stats.fairwayAttempts === 0
+                ? [{ value: 1, color: "#e2e8f0" }]
+                : [
+                    { value: stats.fairwayHitPct, color: "#2563eb" },
+                    { value: 1 - stats.fairwayHitPct, color: "#e2e8f0" },
+                  ]
+            }
+            valueColor="#2563eb"
+          />
+          <PieStat
+            label="Penalties"
+            value={String(stats.penalties)}
+            sub="Strokes lost"
+            segments={
+              stats.penalties === 0
+                ? [{ value: 1, color: "#16a34a" }]
+                : [
+                    { value: Math.min(stats.penalties / 9, 1), color: "#dc2626" },
+                    { value: Math.max(0, 1 - stats.penalties / 9), color: "#e2e8f0" },
+                  ]
+            }
+            valueColor={stats.penalties === 0 ? "#16a34a" : "#dc2626"}
+          />
         </div>
 
         {/* ── FREE: Round Insights ───────────────────────────────────────── */}
@@ -237,12 +290,57 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
-function StatBlock({ label, value, sub }: { label: string; value: string; sub: string }) {
+function puttColor(avg: number): string {
+  if (avg <= 1.9) return "#16a34a";
+  if (avg <= 2.2) return "#f59e0b";
+  return "#dc2626";
+}
+
+function PieStat({
+  label,
+  value,
+  sub,
+  segments,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  segments: Array<{ value: number; color: string }>;
+  valueColor?: string;
+}) {
   return (
-    <div className="bg-paper p-5">
+    <div className="flex flex-col items-center rounded-2xl bg-white p-4 ring-1 ring-navy/10">
       <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-navy/50">{label}</p>
-      <p className="font-mono text-3xl font-bold">{value}</p>
-      <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-navy/40">{sub}</p>
+      <div className="relative">
+        <PieChart width={110} height={110}>
+          <Pie
+            data={segments}
+            cx={55}
+            cy={55}
+            innerRadius={34}
+            outerRadius={50}
+            startAngle={90}
+            endAngle={-270}
+            dataKey="value"
+            stroke="none"
+            paddingAngle={segments.length > 1 ? 2 : 0}
+          >
+            {segments.map((s, i) => (
+              <Cell key={i} fill={s.color} />
+            ))}
+          </Pie>
+        </PieChart>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span
+            className="font-mono text-base font-bold"
+            style={{ color: valueColor ?? "#1e3a5f" }}
+          >
+            {value}
+          </span>
+        </div>
+      </div>
+      <p className="mt-1 text-center text-[9px] font-bold uppercase tracking-wider text-navy/40">{sub}</p>
     </div>
   );
 }
