@@ -209,79 +209,15 @@ function SummaryContent({ round }: { round: Round }) {
           </div>
         </div>
 
-        {/* ── FREE: Round Insights ───────────────────────────────────────── */}
-        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">Round Insights</h3>
-        <div className="mb-10 space-y-3">
-          {freeInsights.map((insight, i) => (
-            <InsightCard key={i} insight={insight} />
-          ))}
-        </div>
-
-        {/* ── PRO: AI Caddie ─────────────────────────────────────────────── */}
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.25em]">AI Caddie</h3>
-          {isPro && (
-            <span className="rounded-full bg-grass px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-paper">
-              Pro
-            </span>
-          )}
-        </div>
-
-        {isPro ? (
-          <div className="mb-12 space-y-3">
-            {aiLoading ? (
-              <>
-                <p className="mb-3 font-mono text-[9px] uppercase tracking-widest text-grass animate-pulse">
-                  AI analyzing your round…
-                </p>
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-24 animate-pulse rounded-2xl bg-navy/10" />
-                ))}
-              </>
-            ) : aiInsights ? (
-              aiInsights.map((insight, i) => <InsightCard key={i} insight={insight} />)
-            ) : (
-              <div className="rounded-2xl border border-navy/15 p-4 text-sm text-navy/60">
-                <p className="font-bold text-navy/80 mb-1">AI insights unavailable</p>
-                <p className="font-mono text-xs break-all">{aiError ?? "Unknown error — check your API key in Vercel and redeploy."}</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="mb-12">
-            <div className="rounded-2xl border-2 border-dashed border-navy/15 p-6">
-              <div className="mb-4 flex items-start justify-between">
-                <div>
-                  <p className="font-display text-2xl leading-tight">Unlock AI Caddie</p>
-                  <p className="mt-1 text-sm text-navy/60">
-                    Personalized insights powered by Claude AI
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full bg-grass px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-paper">
-                  Pro
-                </span>
-              </div>
-              <ul className="mb-6 space-y-2">
-                {[
-                  "Directional miss analysis — left, right, or OB patterns",
-                  "Specific practice drills based on your data",
-                  "Personalized advice after every round",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-navy/70">
-                    <span className="mt-0.5 shrink-0 text-grass">✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href={stripeLink}
-                className="block w-full rounded-xl bg-navy py-4 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-grass touch-manipulation"
-              >
-                Upgrade to AI Caddie
-              </a>
-            </div>
-          </div>
-        )}
+        {/* ── Insight tab switcher ───────────────────────────────────────── */}
+        <InsightTabs
+          freeInsights={freeInsights}
+          isPro={isPro}
+          aiLoading={aiLoading}
+          aiInsights={aiInsights}
+          aiError={aiError}
+          stripeLink={stripeLink}
+        />
 
         {/* Scorecard */}
         <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">Scorecard</h3>
@@ -299,6 +235,113 @@ function SummaryContent({ round }: { round: Round }) {
         </div>
       </section>
     </AppShell>
+  );
+}
+
+function InsightTabs({
+  freeInsights,
+  isPro,
+  aiLoading,
+  aiInsights,
+  aiError,
+  stripeLink,
+}: {
+  freeInsights: Insight[];
+  isPro: boolean;
+  aiLoading: boolean;
+  aiInsights: Insight[] | null;
+  aiError: string | null;
+  stripeLink: string;
+}) {
+  const [tab, setTab] = useState<"free" | "ai">("free");
+
+  return (
+    <div className="mb-12">
+      {/* Tab buttons */}
+      <div className="mb-4 flex gap-2">
+        <button
+          onClick={() => setTab("free")}
+          className={
+            "flex-1 rounded-xl py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors touch-manipulation " +
+            (tab === "free"
+              ? "bg-navy text-paper"
+              : "border border-navy/15 text-navy/50 hover:bg-navy/5")
+          }
+        >
+          Round Insights
+        </button>
+        <button
+          onClick={() => setTab("ai")}
+          className={
+            "flex-1 rounded-xl py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors touch-manipulation " +
+            (tab === "ai"
+              ? "bg-grass text-paper"
+              : "border border-navy/15 text-navy/50 hover:bg-navy/5")
+          }
+        >
+          AI Caddie
+        </button>
+      </div>
+
+      {/* Tab content */}
+      {tab === "free" ? (
+        <div className="space-y-3">
+          {freeInsights.map((insight, i) => (
+            <InsightCard key={i} insight={insight} />
+          ))}
+        </div>
+      ) : isPro ? (
+        <div className="space-y-3">
+          {aiLoading ? (
+            <>
+              <p className="mb-3 font-mono text-[9px] uppercase tracking-widest text-grass animate-pulse">
+                AI analyzing your round…
+              </p>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-24 animate-pulse rounded-2xl bg-navy/10" />
+              ))}
+            </>
+          ) : aiInsights ? (
+            aiInsights.map((insight, i) => <InsightCard key={i} insight={insight} />)
+          ) : (
+            <div className="rounded-2xl border border-navy/15 p-4 text-sm text-navy/60">
+              <p className="font-bold text-navy/80 mb-1">AI insights unavailable</p>
+              <p className="font-mono text-xs break-all">{aiError ?? "Unknown error — check your API key in Vercel and redeploy."}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-2xl border-2 border-dashed border-navy/15 p-6">
+          <div className="mb-4 flex items-start justify-between">
+            <div>
+              <p className="font-display text-2xl leading-tight">Unlock AI Caddie</p>
+              <p className="mt-1 text-sm text-navy/60">Personalized insights powered by Claude AI</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-grass px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-paper">
+              Pro
+            </span>
+          </div>
+          <ul className="mb-6 space-y-2">
+            {[
+              "Directional miss analysis — left, right, or OB patterns",
+              "Specific practice drills based on your data",
+              "Personalized advice after every round",
+            ].map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-navy/70">
+                <span className="mt-0.5 shrink-0 text-grass">✓</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <a
+            href={stripeLink}
+            className="block w-full rounded-xl bg-navy py-4 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-grass touch-manipulation"
+          >
+            Upgrade to AI Caddie
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
 
