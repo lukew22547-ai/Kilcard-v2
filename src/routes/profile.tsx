@@ -206,7 +206,7 @@ function ProfilePage() {
         <button
           type="button"
           onClick={handleSignOut}
-          className="w-full rounded-2xl bg-red-500 py-[15px] text-[15px] font-semibold text-white shadow-sm transition-all hover:bg-red-600 active:scale-[0.98]"
+          className="w-full rounded-2xl bg-red-800 py-[15px] text-[15px] font-semibold text-white shadow-sm transition-all hover:bg-red-900 active:scale-[0.98]"
         >
           Sign Out
         </button>
