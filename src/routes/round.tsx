@@ -75,20 +75,28 @@ function RoundPage() {
       <section className="flex h-full flex-col gap-2 py-2 animate-reveal">
 
         {/* Course banner */}
-        <div className="shrink-0 flex items-center justify-between rounded-2xl bg-navy px-5 py-3.5 text-paper shadow-sm">
-          <div className="min-w-0">
-            <p className="font-display text-xl leading-none tracking-wide truncate">{round.course}</p>
+        <div className="shrink-0 flex items-center justify-between gap-2 rounded-2xl bg-navy px-4 py-3 text-paper shadow-sm">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-lg leading-none tracking-wide truncate">{round.course}</p>
             <p className="mt-1 font-mono text-[11px] text-paper/45">
               {stats.holesPlayed}/{round.holes.length} holes
               {stats.holesPlayed > 0 ? ` · ${formatToPar(stats.toPar)} thru ${stats.holesPlayed}` : ""}
             </p>
           </div>
-          <button
-            onClick={finish}
-            className="ml-3 shrink-0 rounded-2xl bg-white/12 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-paper/80 transition-colors hover:bg-white/20 touch-manipulation"
-          >
-            Finish
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={isLast ? finish : next}
+              className="rounded-2xl bg-grass px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-paper transition-colors hover:bg-grass/80 touch-manipulation"
+            >
+              {isLast ? "Finish" : "Next →"}
+            </button>
+            <button
+              onClick={finish}
+              className="rounded-2xl bg-white/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-paper/70 transition-colors hover:bg-white/20 touch-manipulation"
+            >
+              End
+            </button>
+          </div>
         </div>
 
         {/* Hole strip */}
