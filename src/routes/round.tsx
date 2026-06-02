@@ -30,7 +30,7 @@ function RoundPage() {
 
   if (!round) {
     return (
-      <AppShell>
+      <AppShell compact>
         <div className="flex flex-col items-center py-20 text-center">
           <p className="font-display text-3xl uppercase">No Active Round</p>
           <p className="mt-2 text-[15px] text-navy/50">Start a new round from the home screen.</p>
@@ -71,7 +71,7 @@ function RoundPage() {
   const isLast = holeIdx === round.holes.length - 1;
 
   return (
-    <AppShell fullHeight>
+    <AppShell fullHeight compact>
       <section className="flex h-full flex-col gap-2 py-2 animate-reveal">
 
         {/* Course banner */}

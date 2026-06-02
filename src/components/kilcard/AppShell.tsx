@@ -90,17 +90,21 @@ function ProfileButton() {
   );
 }
 
-export function AppShell({ children, fullHeight }: { children: ReactNode; fullHeight?: boolean }) {
+export function AppShell({ children, fullHeight, compact }: { children: ReactNode; fullHeight?: boolean; compact?: boolean }) {
   const { location } = useRouterState();
 
   return (
     <div className={fullHeight ? "h-dvh flex flex-col bg-paper text-navy" : "min-h-dvh flex flex-col bg-paper text-navy"}>
 
-      {/* Header — bigger logo left, profile avatar right */}
+      {/* Header — logo left, profile avatar right */}
       <header className="shrink-0 sticky top-0 z-20 border-b border-navy/8 bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center justify-between px-5 py-1">
+        <div className={`mx-auto flex max-w-md items-center justify-between px-5 ${compact ? "py-1" : "py-1"}`}>
           <Link to="/">
-            <img src={kilcardLogo} alt="Kilcard" className="h-16 w-auto mix-blend-multiply" />
+            <img
+              src={kilcardLogo}
+              alt="Kilcard"
+              className={`${compact ? "h-8" : "h-16"} w-auto mix-blend-multiply`}
+            />
           </Link>
           <ProfileButton />
         </div>
