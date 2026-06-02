@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { AppShell } from "@/components/kilcard/AppShell";
 import { useActiveRound, useHistory } from "@/lib/kilcard/storage";
 import { computeStats, formatToPar } from "@/lib/kilcard/stats";
 import { makeRound } from "@/lib/kilcard/types";
 import { type CourseInfo, searchCourses } from "@/lib/kilcard/courses";
+import { hasOnboarded } from "@/lib/kilcard/onboarding";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,6 +29,10 @@ function Index() {
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const inputRef = useRef<HTMLInputElement>(null);
   const last = history[0];
+
+  useEffect(() => {
+    if (!hasOnboarded()) navigate({ to: "/onboarding" });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const suggestions = searchCourses(query);
 
