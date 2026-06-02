@@ -113,14 +113,18 @@ function Index() {
   function pickCourse(c: CourseInfo) {
     setSelected(c);
     setQuery(c.name);
-    setHoleCount(c.holes);
+    // Only switch to 9 if the course is a 9-hole course.
+    // Never override an explicit 9-hole selection the user already made.
+    if (c.holes === 9) setHoleCount(9);
     setShowDrop(false);
     inputRef.current?.blur();
   }
 
   function startRound() {
     const name = query.trim() || "Untitled Course";
-    const count = selected?.holes ?? holeCount;
+    // User's explicit holeCount wins. Cap at course holes if the course
+    // has fewer holes than selected (e.g. playing 9 at an 18-hole course).
+    const count = selected ? Math.min(selected.holes, holeCount) : holeCount;
     const round = makeRound(name, count, selected?.pars);
     setActive(round);
     setQuery("");
