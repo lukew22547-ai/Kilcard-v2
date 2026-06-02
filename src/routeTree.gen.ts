@@ -14,7 +14,9 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RoundRouteImport } from './routes/round'
 import { Route as ProRouteImport } from './routes/pro'
 import { Route as IntroRouteImport } from './routes/intro'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as CaddieRouteImport } from './routes/caddie'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -43,6 +45,16 @@ const IntroRoute = IntroRouteImport.update({
   path: '/intro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CaddieRoute = CaddieRouteImport.update({
+  id: '/caddie',
+  path: '/caddie',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -62,32 +74,38 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/caddie': typeof CaddieRoute
   '/history': typeof HistoryRoute
   '/intro': typeof IntroRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/stats': typeof StatsRoute
   '/summary': typeof SummaryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/caddie': typeof CaddieRoute
   '/history': typeof HistoryRoute
   '/intro': typeof IntroRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/stats': typeof StatsRoute
   '/summary': typeof SummaryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/caddie': typeof CaddieRoute
   '/history': typeof HistoryRoute
   '/intro': typeof IntroRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/stats': typeof StatsRoute
   '/summary': typeof SummaryRoute
 }
 export interface FileRouteTypes {
@@ -95,42 +113,50 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/caddie'
     | '/history'
     | '/intro'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
+    | '/stats'
     | '/summary'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/caddie'
     | '/history'
     | '/intro'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
+    | '/stats'
     | '/summary'
   id:
     | '__root__'
     | '/'
     | '/auth'
+    | '/caddie'
     | '/history'
     | '/intro'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
+    | '/stats'
     | '/summary'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  CaddieRoute: typeof CaddieRoute
   HistoryRoute: typeof HistoryRoute
   IntroRoute: typeof IntroRoute
   ProRoute: typeof ProRoute
   RoundRoute: typeof RoundRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StatsRoute: typeof StatsRoute
   SummaryRoute: typeof SummaryRoute
 }
 
@@ -141,6 +167,20 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/caddie': {
+      id: '/caddie'
+      path: '/caddie'
+      fullPath: '/caddie'
+      preLoaderRoute: typeof CaddieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/summary': {
@@ -198,11 +238,13 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  CaddieRoute: CaddieRoute,
   HistoryRoute: HistoryRoute,
   IntroRoute: IntroRoute,
   ProRoute: ProRoute,
   RoundRoute: RoundRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StatsRoute: StatsRoute,
   SummaryRoute: SummaryRoute,
 }
 export const routeTree = rootRouteImport

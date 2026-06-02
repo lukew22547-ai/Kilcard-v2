@@ -13,8 +13,6 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Kilcard — Track. Analyze. Improve." },
       { name: "description", content: "A minimal golf performance tracker. Log each hole in seconds and get clear, actionable insights to improve your game." },
-      { property: "og:title", content: "Kilcard — Track. Analyze. Improve." },
-      { property: "og:description", content: "A minimal golf performance tracker. Log each hole in seconds and get clear, actionable insights to improve your game." },
     ],
   }),
   component: Index,
@@ -28,10 +26,9 @@ function Index() {
   const [selected, setSelected] = useState<CourseInfo | null>(null);
   const [showDrop, setShowDrop] = useState(false);
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
+  const [authReady, setAuthReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const last = history[0];
-
-  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -52,7 +49,6 @@ function Index() {
 
   if (!authReady) return null;
 
-
   const suggestions = searchCourses(query);
 
   function pickCourse(c: CourseInfo) {
@@ -61,10 +57,6 @@ function Index() {
     setHoleCount(c.holes);
     setShowDrop(false);
     inputRef.current?.blur();
-  }
-
-  function clearSelection() {
-    setSelected(null);
   }
 
   function startRound() {
@@ -79,207 +71,181 @@ function Index() {
 
   return (
     <AppShell>
-      <section className="animate-reveal">
-        <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-grass">
-              Kilcard / Performance
-            </p>
-            <h1 className="font-display text-5xl uppercase leading-[0.95] tracking-tight text-balance">
-              Ready for<br />the first tee?
-            </h1>
-          </div>
+      <div className="animate-reveal space-y-6">
+
+        {/* Page title */}
+        <div>
+          <h1 className="font-display text-[42px] uppercase leading-none tracking-tight">
+            {active ? "Round in\nProgress" : "Ready to\nPlay?"}
+          </h1>
+          <p className="mt-2 text-[15px] text-navy/50">
+            {active
+              ? "You have an active round. Resume or discard it below."
+              : "Start a new round and track every hole."}
+          </p>
         </div>
 
+        {/* Active round */}
         {active ? (
-          <ActiveRoundCard
-            holesPlayed={computeStats(active).holesPlayed}
-            totalHoles={active.holes.length}
-            course={active.course}
-            onResume={() => navigate({ to: "/round" })}
-            onDiscard={() => setActive(null)}
-          />
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-navy/8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-grass">
+              Round In Progress
+            </p>
+            <p className="mt-1 font-display text-2xl uppercase leading-tight">{active.course}</p>
+            <p className="text-[13px] text-navy/50">
+              {computeStats(active).holesPlayed} of {active.holes.length} holes logged
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => navigate({ to: "/round" })}
+                className="flex-1 rounded-xl bg-navy py-3 text-[12px] font-semibold uppercase tracking-[0.15em] text-paper transition-all hover:bg-grass active:scale-[0.98]"
+              >
+                Resume Round
+              </button>
+              <button
+                onClick={() => setActive(null)}
+                className="rounded-xl border border-navy/15 px-4 py-3 text-[12px] font-semibold text-navy/50 transition-all hover:bg-navy/5 active:scale-[0.98]"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
         ) : (
-          <div className="space-y-3">
-            <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-              Holes
-            </label>
-            <div className="flex">
-              {([9, 18] as const).map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setHoleCount(n)}
-                  className={
-                    "flex-1 py-3 text-sm font-bold uppercase tracking-[0.25em] transition-colors " +
-                    (holeCount === n
-                      ? "bg-navy text-paper"
-                      : "border border-navy/15 text-navy/60 hover:bg-navy/5")
-                  }
-                >
-                  {n} Holes
-                </button>
-              ))}
+          <div className="space-y-4">
+
+            {/* Hole count — segmented control */}
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy/40">
+                Holes
+              </p>
+              <div className="flex rounded-[14px] bg-navy/10 p-[3px]">
+                {([9, 18] as const).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setHoleCount(n)}
+                    className={
+                      "flex-1 rounded-[11px] py-2.5 text-[13px] font-semibold transition-all duration-200 " +
+                      (holeCount === n
+                        ? "bg-white text-navy shadow-sm"
+                        : "text-navy/40 hover:text-navy/60")
+                    }
+                  >
+                    {n} Holes
+                  </button>
+                ))}
+              </div>
             </div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-              Course
-            </label>
-            <div className="relative">
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  clearSelection();
-                  setShowDrop(true);
-                }}
-                onFocus={() => setShowDrop(true)}
-                onBlur={() => setTimeout(() => setShowDrop(false), 150)}
-                maxLength={60}
-                placeholder="Search Arkansas courses…"
-                className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
-              />
-              {selected && (
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-grass px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-paper">
-                  Par {selected.pars.reduce((a, b) => a + b, 0)} · {selected.holes}h
-                </span>
-              )}
-              {showDrop && suggestions.length > 0 && (
-                <div className="absolute z-20 w-full overflow-hidden rounded-b-xl border border-t-0 border-navy/15 bg-white shadow-lg">
-                  {suggestions.map((c) => (
-                    <button
-                      key={c.id}
-                      onMouseDown={() => pickCourse(c)}
-                      onTouchStart={() => pickCourse(c)}
-                      className="flex w-full items-center justify-between border-b border-navy/5 px-4 py-3 text-left last:border-0 hover:bg-navy/5"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-navy">{c.name}</p>
-                        <p className="text-xs text-navy/50">{c.city}, AR</p>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-grass/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-grass">
-                        Par {c.pars.reduce((a, b) => a + b, 0)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+
+            {/* Course search */}
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy/40">
+                Course
+              </p>
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => { setQuery(e.target.value); setSelected(null); setShowDrop(true); }}
+                  onFocus={() => setShowDrop(true)}
+                  onBlur={() => setTimeout(() => setShowDrop(false), 150)}
+                  maxLength={60}
+                  placeholder="Search Arkansas courses…"
+                  className="w-full rounded-2xl bg-white px-5 py-4 text-[15px] font-medium text-navy shadow-sm ring-1 ring-navy/10 placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-grass/30 transition-all"
+                />
+                {selected && (
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-grass/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-grass">
+                    Par {selected.pars.reduce((a, b) => a + b, 0)} · {selected.holes}h
+                  </span>
+                )}
+                {showDrop && suggestions.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-navy/10">
+                    {suggestions.map((c) => (
+                      <button
+                        key={c.id}
+                        onMouseDown={() => pickCourse(c)}
+                        onTouchStart={() => pickCourse(c)}
+                        className="flex w-full items-center justify-between border-b border-navy/5 px-5 py-3.5 text-left last:border-0 hover:bg-navy/5 transition-colors"
+                      >
+                        <div>
+                          <p className="text-[14px] font-semibold text-navy">{c.name}</p>
+                          <p className="text-[12px] text-navy/40">{c.city}, AR</p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-grass/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-grass">
+                          Par {c.pars.reduce((a, b) => a + b, 0)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Start button */}
             <button
               onClick={startRound}
-              className="w-full bg-navy py-5 text-sm font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-grass"
+              className="w-full rounded-2xl bg-grass py-[15px] text-[15px] font-semibold text-paper shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
             >
               Start New Round
             </button>
           </div>
         )}
 
-        <div className="mt-12 border-t-2 border-navy/10 pt-6">
-          <h2 className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">
-            {last ? "Last Round Summary" : "No rounds yet"}
-          </h2>
+        {/* Last round */}
+        <div>
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy/40">
+            {last ? "Last Round" : "No Rounds Yet"}
+          </p>
           {last ? (
-            <LastRoundCard
-              course={last.course}
-              date={new Date(last.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-              {...(() => {
-                const s = computeStats(last);
-                return {
-                  toPar: formatToPar(s.toPar),
-                  total: s.totalScore,
-                  gir: Math.round(s.girPct * 100),
-                  putts: s.avgPutts.toFixed(1),
-                  fwy: Math.round(s.fairwayHitPct * 100),
-                };
-              })()}
-            />
+            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-navy/8">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-display text-xl uppercase leading-tight">{last.course}</p>
+                  <p className="text-[12px] text-navy/40">
+                    {new Date(last.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
+                {(() => {
+                  const s = computeStats(last);
+                  return (
+                    <div className="text-right">
+                      <p className="font-mono text-2xl font-bold">{formatToPar(s.toPar)}</p>
+                      <p className="text-[10px] font-bold uppercase text-grass">{s.totalScore} total</p>
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2 border-t border-navy/8 pt-4">
+                {(() => {
+                  const s = computeStats(last);
+                  return (
+                    <>
+                      <StatCell label="GIR" value={`${Math.round(s.girPct * 100)}%`} />
+                      <StatCell label="Putts" value={s.avgPutts.toFixed(1)} />
+                      <StatCell label="Fwy" value={`${Math.round(s.fairwayHitPct * 100)}%`} />
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
           ) : (
-            <p className="text-sm leading-relaxed text-navy/50">
-              Your finished rounds will appear here with full stats and caddie insights.
-            </p>
+            <div className="rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-navy/8">
+              <p className="text-[14px] text-navy/40 leading-relaxed">
+                Your finished rounds will appear here with full stats and caddie insights.
+              </p>
+            </div>
           )}
         </div>
-      </section>
+
+      </div>
     </AppShell>
   );
 }
 
-function ActiveRoundCard({
-  holesPlayed,
-  totalHoles,
-  course,
-  onResume,
-  onDiscard,
-}: {
-  holesPlayed: number;
-  totalHoles: number;
-  course: string;
-  onResume: () => void;
-  onDiscard: () => void;
-}) {
-  return (
-    <div className="bg-white p-5 ring-1 ring-navy/10">
-      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-grass">
-        Round In Progress
-      </p>
-      <p className="mt-1 font-display text-2xl">{course}</p>
-      <p className="text-xs text-navy/60">
-        {holesPlayed} of {totalHoles} holes logged
-      </p>
-      <div className="mt-4 flex gap-2">
-        <button
-          onClick={onResume}
-          className="flex-1 bg-navy py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-grass"
-        >
-          Resume Round
-        </button>
-        <button
-          onClick={onDiscard}
-          className="border border-navy/15 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-navy/60 hover:bg-navy/5"
-        >
-          Discard
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function LastRoundCard(props: {
-  course: string;
-  date: string;
-  toPar: string;
-  total: number;
-  gir: number;
-  putts: string;
-  fwy: number;
-}) {
-  return (
-    <div className="bg-white p-5 ring-1 ring-navy/10">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <p className="font-display text-2xl">{props.course}</p>
-          <p className="text-xs text-navy/60">{props.date}</p>
-        </div>
-        <div className="text-right">
-          <p className="font-mono text-2xl font-bold">{props.toPar}</p>
-          <p className="text-[10px] font-bold uppercase text-grass">
-            {props.total} Total
-          </p>
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-2 border-t border-navy/10 pt-4">
-        <Stat label="GIR" value={`${props.gir}%`} />
-        <Stat label="Putts" value={props.putts} />
-        <Stat label="Fwy" value={`${props.fwy}%`} />
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
+function StatCell({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="mb-1 text-[9px] font-bold uppercase text-navy/60">{label}</p>
-      <p className="font-mono text-sm">{value}</p>
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-navy/40">{label}</p>
+      <p className="font-mono text-[15px] font-bold text-navy">{value}</p>
     </div>
   );
 }

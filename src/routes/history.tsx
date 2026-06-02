@@ -8,8 +8,6 @@ export const Route = createFileRoute("/history")({
     meta: [
       { title: "Round History — Kilcard" },
       { name: "description", content: "Browse every round you've logged with Kilcard." },
-      { property: "og:title", content: "Round History — Kilcard" },
-      { property: "og:description", content: "Browse every round you've logged with Kilcard." },
     ],
   }),
   component: HistoryPage,
@@ -20,23 +18,28 @@ function HistoryPage() {
 
   return (
     <AppShell>
-      <section className="animate-reveal">
-        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-grass">
-          Archive
-        </p>
-        <h1 className="mb-8 mt-1 font-display text-5xl uppercase leading-none tracking-tight">
-          Round History
-        </h1>
+      <div className="animate-reveal space-y-5">
+
+        <div>
+          <h1 className="font-display text-[42px] uppercase leading-none tracking-tight">
+            Past Rounds
+          </h1>
+          <p className="mt-2 text-[15px] text-navy/50">
+            {history.length > 0
+              ? `${history.length} round${history.length === 1 ? "" : "s"} logged`
+              : "No rounds logged yet"}
+          </p>
+        </div>
 
         {history.length === 0 ? (
-          <div className="bg-white p-8 text-center ring-1 ring-navy/10">
-            <p className="font-display text-2xl">Nothing logged yet</p>
-            <p className="mt-2 text-sm text-navy/60">
-              Finished rounds will live here. Start one from the home screen.
+          <div className="rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-navy/8">
+            <p className="font-display text-2xl uppercase">Nothing logged yet</p>
+            <p className="mt-2 text-[14px] text-navy/50">
+              Finished rounds will appear here. Start one from the Round tab.
             </p>
             <Link
               to="/"
-              className="mt-6 inline-block bg-navy px-6 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-paper hover:bg-grass"
+              className="mt-5 inline-block rounded-xl bg-grass px-6 py-3 text-[12px] font-semibold uppercase tracking-[0.15em] text-paper transition-all hover:shadow-md active:scale-[0.98]"
             >
               Start a Round
             </Link>
@@ -50,48 +53,35 @@ function HistoryPage() {
                   key={r.id}
                   to="/summary"
                   search={{ id: r.id }}
-                  className="grid grid-cols-[1fr_auto] items-start gap-4 bg-white p-5 ring-1 ring-navy/10 transition-shadow hover:ring-navy/30"
+                  className="block rounded-2xl bg-white p-5 shadow-sm ring-1 ring-navy/8 transition-all hover:shadow-md active:scale-[0.99]"
                 >
-                  <div>
-                    <p className="font-display text-xl leading-tight">{r.course}</p>
-                    <p className="font-mono text-[10px] uppercase text-navy/50">
-                      {new Date(r.date).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                      {" · "}
-                      {s.holesPlayed} holes
-                    </p>
-                    <div className="mt-3 flex gap-4 font-mono text-[11px]">
-                      <span>
-                        <span className="text-navy/50">GIR </span>
-                        {Math.round(s.girPct * 100)}%
-                      </span>
-                      <span>
-                        <span className="text-navy/50">Putts </span>
-                        {s.avgPutts.toFixed(1)}
-                      </span>
-                      <span>
-                        <span className="text-navy/50">Fwy </span>
-                        {Math.round(s.fairwayHitPct * 100)}%
-                      </span>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-display text-xl uppercase leading-tight truncate">{r.course}</p>
+                      <p className="mt-0.5 text-[12px] text-navy/40">
+                        {new Date(r.date).toLocaleDateString(undefined, {
+                          month: "short", day: "numeric", year: "numeric",
+                        })}
+                        {" · "}{s.holesPlayed} holes
+                      </p>
+                      <div className="mt-3 flex gap-4 font-mono text-[12px] text-navy">
+                        <span><span className="text-navy/40">GIR </span>{Math.round(s.girPct * 100)}%</span>
+                        <span><span className="text-navy/40">Putts </span>{s.avgPutts.toFixed(1)}</span>
+                        <span><span className="text-navy/40">Fwy </span>{Math.round(s.fairwayHitPct * 100)}%</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono text-2xl font-bold">
-                      {formatToPar(s.toPar)}
-                    </p>
-                    <p className="text-[10px] font-bold uppercase text-grass">
-                      {s.totalScore}
-                    </p>
+                    <div className="shrink-0 text-right">
+                      <p className="font-mono text-2xl font-bold">{formatToPar(s.toPar)}</p>
+                      <p className="text-[10px] font-bold uppercase text-grass">{s.totalScore}</p>
+                    </div>
                   </div>
                 </Link>
               );
             })}
           </div>
         )}
-      </section>
+
+      </div>
     </AppShell>
   );
 }
