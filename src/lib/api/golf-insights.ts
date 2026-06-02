@@ -82,7 +82,9 @@ Guidelines:
 
       if (json.error) return { error: json.error.message, insights: null };
 
-      const text = json.content?.[0]?.type === "text" ? json.content[0].text.trim() : "";
+      const raw = json.content?.[0]?.type === "text" ? json.content[0].text.trim() : "";
+      // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+      const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
       const insights = JSON.parse(text) as Insight[];
       return { error: null, insights };
     } catch (e) {
