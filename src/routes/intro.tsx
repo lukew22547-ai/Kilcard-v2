@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import kilcardLogo from "@/assets/KilCard.png";
 
 export const Route = createFileRoute("/intro")({
@@ -41,8 +43,21 @@ function IntroPage() {
   const touchEndX = useRef(0);
 
   useEffect(() => {
+    // Stamp persistence flags
     localStorage.setItem("kilcard:intro-seen", "true");
-  }, []);
+    document.cookie = "kc_intro=1; max-age=31536000; path=/; SameSite=Lax";
+
+    // If the user already has a valid Firebase session (e.g. iOS force-quit
+    // cleared our cookies but kept the session), skip intro and go home.
+    const unsub = onAuthStateChanged(auth, (user) => {
+      const isGuest = localStorage.getItem("kilcard:guest") === "true";
+      if (user || isGuest) {
+        document.cookie = "kc_auth=1; max-age=31536000; path=/; SameSite=Lax";
+        navigate({ to: "/" });
+      }
+    });
+    return unsub;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goNext = useCallback(() => setSlide((s) => Math.min(s + 1, 1)), []);
   const goPrev = useCallback(() => setSlide((s) => Math.max(s - 1, 0)), []);
