@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
+import kilcardLogo from "@/assets/KilCard.png";
 
 export const Route = createFileRoute("/intro")({
   head: () => ({
@@ -47,11 +48,8 @@ function IntroPage() {
       {/* Header */}
       <header className="shrink-0 border-b border-navy/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-6 py-4">
-          <Link to="/intro" className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center bg-navy">
-              <span className="size-3 bg-grass" />
-            </span>
-            <span className="font-display text-2xl leading-none">KILCARD</span>
+          <Link to="/intro" className="flex items-center">
+            <img src={kilcardLogo} alt="Kilcard" className="h-14 w-auto mix-blend-multiply" />
           </Link>
         </div>
       </header>
