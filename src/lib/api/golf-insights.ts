@@ -27,25 +27,18 @@ export const getAIInsights = createServerFn({ method: "POST" })
   .inputValidator(InputSchema)
   .handler(async ({ data }) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-
-    const Anthropic = (await import("@anthropic-ai/sdk")).default;
-    const client = new Anthropic({ apiKey });
+    if (!apiKey) return { error: "no_key", insights: null };
 
     const fwMissTotal = data.fairwayMissLeft + data.fairwayMissRight + data.fairwayMissOB;
     const girMissTotal = data.girMissLeft + data.girMissRight + data.girMissOB;
 
     const fwLine = data.fairwayAttempts > 0
       ? `Fairways: ${Math.round(data.fairwayHitPct * 100)}% of ${data.fairwayAttempts}` +
-        (fwMissTotal > 0
-          ? ` | misses — left: ${data.fairwayMissLeft}, right: ${data.fairwayMissRight}, OB: ${data.fairwayMissOB}`
-          : "")
+        (fwMissTotal > 0 ? ` | misses — left: ${data.fairwayMissLeft}, right: ${data.fairwayMissRight}, OB: ${data.fairwayMissOB}` : "")
       : null;
 
     const girLine = `GIR: ${Math.round(data.girPct * 100)}%` +
-      (girMissTotal > 0
-        ? ` | misses — left: ${data.girMissLeft}, right: ${data.girMissRight}, OB: ${data.girMissOB}`
-        : "");
+      (girMissTotal > 0 ? ` | misses — left: ${data.girMissLeft}, right: ${data.girMissRight}, OB: ${data.girMissOB}` : "");
 
     const udLine = data.upAndDownAttempts > 0
       ? `Up & Down: ${Math.round(data.upAndDownPct * 100)}% (${data.upAndDownAttempts} attempts)`
@@ -66,22 +59,33 @@ Return ONLY a valid JSON array — no markdown, no explanation:
 
 Guidelines:
 - tone: "focus" = area needing work, "win" = strength to build on, "neutral" = general observation
-- Use the miss direction data to give specific, directional practice advice (e.g. "You're missing right consistently — check alignment at address")
-- body: 1–2 sentences, direct and actionable, no fluff
+- Use miss direction data for specific directional advice
+- body: 1-2 sentences, direct and actionable
 - Exactly 3 insights`;
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const text =
-      message.content[0].type === "text" ? message.content[0].text.trim() : "";
-
     try {
-      return JSON.parse(text) as Insight[];
-    } catch {
-      return null;
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      const json = await res.json() as { content?: Array<{ type: string; text: string }>; error?: { message: string } };
+
+      if (json.error) return { error: json.error.message, insights: null };
+
+      const text = json.content?.[0]?.type === "text" ? json.content[0].text.trim() : "";
+      const insights = JSON.parse(text) as Insight[];
+      return { error: null, insights };
+    } catch (e) {
+      return { error: String(e), insights: null };
     }
   });

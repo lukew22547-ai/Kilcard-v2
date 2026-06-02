@@ -69,6 +69,7 @@ function SummaryContent({ round }: { round: Round }) {
   const freeInsights = generateInsights(stats);
   const [isPro] = useState(true); // temporarily free
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(isPro);
 
   useEffect(() => {
@@ -93,8 +94,11 @@ function SummaryContent({ round }: { round: Round }) {
         penalties: stats.penalties,
       },
     })
-      .then((ai) => setAiInsights(ai ?? null))
-      .catch(() => {})
+      .then((result) => {
+        if (result.insights) setAiInsights(result.insights);
+        else setAiError(result.error ?? "unknown error");
+      })
+      .catch((e) => setAiError(String(e)))
       .finally(() => setAiLoading(false));
   }, [round.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -237,7 +241,10 @@ function SummaryContent({ round }: { round: Round }) {
             ) : aiInsights ? (
               aiInsights.map((insight, i) => <InsightCard key={i} insight={insight} />)
             ) : (
-              <p className="text-sm text-navy/50">AI insights unavailable for this round.</p>
+              <div className="rounded-2xl border border-navy/15 p-4 text-sm text-navy/60">
+                <p className="font-bold text-navy/80 mb-1">AI insights unavailable</p>
+                <p className="font-mono text-xs break-all">{aiError ?? "Unknown error — check your API key in Vercel and redeploy."}</p>
+              </div>
             )}
           </div>
         ) : (
