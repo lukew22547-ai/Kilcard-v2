@@ -38,7 +38,14 @@ function firebaseError(code: string): string {
     case "auth/code-expired":              return "Code expired. Request a new one.";
     case "auth/quota-exceeded":            return "SMS quota exceeded. Try again later.";
     case "auth/missing-phone-number":      return "Enter a phone number.";
-    default:                               return "Something went wrong. Please try again.";
+    case "auth/operation-not-allowed":     return "Phone sign-in is not enabled. Enable it in the Firebase console under Authentication → Sign-in method.";
+    case "auth/app-not-authorized":        return "This domain is not authorized in Firebase. Add it under Authentication → Settings → Authorized domains.";
+    case "auth/captcha-check-failed":      return "reCAPTCHA check failed. Refresh the page and try again.";
+    case "auth/invalid-app-credential":    return "reCAPTCHA error. Refresh the page and try again.";
+    case "auth/missing-app-credential":    return "reCAPTCHA not ready. Refresh the page and try again.";
+    case "auth/billing-not-enabled":       return "Firebase billing is not enabled. Upgrade to the Blaze plan to send SMS.";
+    case "auth/network-request-failed":    return "Network error. Check your connection and try again.";
+    default:                               return `Error: ${code ?? "unknown"}. Check the browser console for details.`;
   }
 }
 
@@ -133,6 +140,7 @@ function AuthPage() {
       confirmationRef.current = result;
       setPhoneStep("verify");
     } catch (err: any) {
+      console.error("Phone auth error:", err.code, err.message);
       setError(firebaseError(err.code));
     } finally {
       setLoading(false);
