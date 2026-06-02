@@ -8,6 +8,20 @@ import { computeStats } from "@/lib/kilcard/stats";
 import { makeRound } from "@/lib/kilcard/types";
 import { type CourseInfo, searchCourses } from "@/lib/kilcard/courses";
 
+// Write intro-seen to both localStorage and a long-lived cookie.
+// iOS Safari can clear localStorage on force-quit; cookies survive.
+function stampIntroSeen() {
+  localStorage.setItem("kilcard:intro-seen", "true");
+  document.cookie = "kc_intro=1; max-age=31536000; path=/; SameSite=Lax";
+}
+
+function hasSeenIntro(): boolean {
+  return (
+    localStorage.getItem("kilcard:intro-seen") === "true" ||
+    document.cookie.includes("kc_intro=1")
+  );
+}
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -31,43 +45,45 @@ function Index() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
+    let initialResolved = false;
 
-    // Use a one-time listener to wait for Firebase to fully restore the session
-    // before making any routing decision. This prevents the race condition where
-    // onAuthStateChanged fires null on refresh before the session is loaded from cache.
-    const unsubscribeOnce = onAuthStateChanged(auth, (user) => {
-      unsubscribeOnce(); // detach immediately — we only need the resolved state
+    // auth.authStateReady() waits until Firebase has fully restored the session
+    // from ALL persistence layers (localStorage + IndexedDB). This is the correct
+    // fix for iOS Safari, which is slow to restore IndexedDB after a force quit
+    // and would otherwise fire onAuthStateChanged with null prematurely.
+    auth.authStateReady().then(() => {
       if (cancelled) return;
+      initialResolved = true;
 
+      const user  = auth.currentUser;
       const isGuest = localStorage.getItem("kilcard:guest") === "true";
 
       if (user) {
-        // Authenticated — stamp intro-seen so the flag is always reliable
-        localStorage.setItem("kilcard:intro-seen", "true");
+        stampIntroSeen();
         setAuthReady(true);
       } else if (isGuest) {
         setAuthReady(true);
       } else {
-        // No session — decide where to send them
-        const hasSeenIntro = !!localStorage.getItem("kilcard:intro-seen");
-        navigate({ to: hasSeenIntro ? "/auth" : "/intro" });
+        navigate({ to: hasSeenIntro() ? "/auth" : "/intro" });
       }
     });
 
-    // Separate ongoing listener for sign-out while the page is open
-    const unsubscribeOngoing = onAuthStateChanged(auth, (user) => {
-      if (cancelled) return;
+    // Ongoing listener — only acts after the initial resolution so it never
+    // interferes with authStateReady's determination on startup / refresh.
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (cancelled || !initialResolved) return;
       const isGuest = localStorage.getItem("kilcard:guest") === "true";
       if (!user && !isGuest) {
         setAuthReady(false);
         navigate({ to: "/auth" });
+      } else if (user || isGuest) {
+        setAuthReady(true);
       }
     });
 
     return () => {
       cancelled = true;
-      unsubscribeOnce();
-      unsubscribeOngoing();
+      unsubscribe();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

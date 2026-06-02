@@ -58,6 +58,7 @@ function AuthPage() {
         ? await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password)
         : await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
       localStorage.setItem("kilcard:intro-seen", "true");
+      document.cookie = "kc_intro=1; max-age=31536000; path=/; SameSite=Lax";
       navigate({ to: "/" });
     } catch (err: any) {
       setError(firebaseError(err.code));
@@ -72,6 +73,7 @@ function AuthPage() {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
       localStorage.setItem("kilcard:intro-seen", "true");
+      document.cookie = "kc_intro=1; max-age=31536000; path=/; SameSite=Lax";
       navigate({ to: "/" });
     } catch (err: any) {
       if (err.code !== "auth/popup-closed-by-user") setError(firebaseError(err.code));
