@@ -3,8 +3,8 @@ import { useRef, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AppShell } from "@/components/kilcard/AppShell";
-import { useActiveRound, useHistory } from "@/lib/kilcard/storage";
-import { computeStats, formatToPar } from "@/lib/kilcard/stats";
+import { useActiveRound } from "@/lib/kilcard/storage";
+import { computeStats } from "@/lib/kilcard/stats";
 import { makeRound } from "@/lib/kilcard/types";
 import { type CourseInfo, searchCourses } from "@/lib/kilcard/courses";
 
@@ -21,14 +21,12 @@ export const Route = createFileRoute("/")({
 function Index() {
   const navigate = useNavigate();
   const [active, setActive] = useActiveRound();
-  const history = useHistory();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CourseInfo | null>(null);
   const [showDrop, setShowDrop] = useState(false);
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const [authReady, setAuthReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const last = history[0];
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -190,50 +188,36 @@ function Index() {
           </div>
         )}
 
-        {/* Last round */}
+        {/* Friends / Social */}
         <div>
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-navy/40">
-            {last ? "Last Round" : "No Rounds Yet"}
+            Friends &amp; Social
           </p>
-          {last ? (
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-navy/8">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-display text-xl uppercase leading-tight">{last.course}</p>
-                  <p className="text-[12px] text-navy/40">
-                    {new Date(last.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                  </p>
-                </div>
-                {(() => {
-                  const s = computeStats(last);
-                  return (
-                    <div className="text-right">
-                      <p className="font-mono text-2xl font-bold">{formatToPar(s.toPar)}</p>
-                      <p className="text-[10px] font-bold uppercase text-grass">{s.totalScore} total</p>
-                    </div>
-                  );
-                })()}
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-navy/8">
+            <div className="flex flex-col items-center text-center gap-3">
+              {/* Icon */}
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-navy/5">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-navy/30">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 border-t border-navy/8 pt-4">
-                {(() => {
-                  const s = computeStats(last);
-                  return (
-                    <>
-                      <StatCell label="GIR" value={`${Math.round(s.girPct * 100)}%`} />
-                      <StatCell label="Putts" value={s.avgPutts.toFixed(1)} />
-                      <StatCell label="Fwy" value={`${Math.round(s.fairwayHitPct * 100)}%`} />
-                    </>
-                  );
-                })()}
+              <div>
+                <p className="text-[15px] font-semibold text-navy">Friends &amp; Social</p>
+                <p className="mt-1 text-[13px] text-navy/40">Under Maintenance</p>
+              </div>
+              {/* Pulsing status */}
+              <div className="flex items-center gap-2 rounded-xl bg-navy/5 px-4 py-2.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-grass opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-grass" />
+                </span>
+                <p className="text-[12px] font-semibold text-navy/50">We're working on it</p>
               </div>
             </div>
-          ) : (
-            <div className="rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-navy/8">
-              <p className="text-[14px] text-navy/40 leading-relaxed">
-                Your finished rounds will appear here with full stats and caddie insights.
-              </p>
-            </div>
-          )}
+          </div>
         </div>
 
       </div>
@@ -241,11 +225,3 @@ function Index() {
   );
 }
 
-function StatCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-navy/40">{label}</p>
-      <p className="font-mono text-[15px] font-bold text-navy">{value}</p>
-    </div>
-  );
-}
