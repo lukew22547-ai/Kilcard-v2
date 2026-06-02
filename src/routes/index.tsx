@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { AppShell } from "@/components/kilcard/AppShell";
 import { useActiveRound, useHistory } from "@/lib/kilcard/storage";
 import { computeStats, formatToPar } from "@/lib/kilcard/stats";
@@ -28,6 +28,12 @@ function Index() {
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const inputRef = useRef<HTMLInputElement>(null);
   const last = history[0];
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !localStorage.getItem("kilcard:intro-seen")) {
+      navigate({ to: "/intro" });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const suggestions = searchCourses(query);
