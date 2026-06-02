@@ -30,9 +30,10 @@ function firebaseError(code: string): string {
     case "auth/weak-password":          return "Password must be at least 6 characters.";
     case "auth/invalid-email":          return "Enter a valid email address.";
     case "auth/too-many-requests":      return "Too many attempts. Try again later.";
-    case "auth/network-request-failed": return "Network error. Check your connection and try again.";
-    case "auth/popup-closed-by-user":   return "Sign-in window was closed. Try again.";
-    case "auth/popup-blocked":          return "Pop-up was blocked by your browser. Allow pop-ups and try again.";
+    case "auth/network-request-failed":  return "Network error. Check your connection and try again.";
+    case "auth/popup-closed-by-user":    return "Sign-in window was closed. Try again.";
+    case "auth/popup-blocked":           return "Pop-up was blocked by your browser. Allow pop-ups and try again.";
+    case "auth/unauthorized-domain":     return "This domain isn't authorized in Firebase. Add it under Authentication → Settings → Authorized domains.";
     case "auth/account-exists-with-different-credential":
       return "An account already exists with the same email under a different sign-in method.";
     default: return "Something went wrong. Please try again.";
