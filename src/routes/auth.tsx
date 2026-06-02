@@ -89,8 +89,8 @@ function AuthPage() {
     <div className="flex min-h-screen flex-col items-center bg-paper px-5 pb-10 pt-14 text-navy">
 
       {/* Logo */}
-      <Link to="/intro" className="mb-10">
-        <img src={kilcardLogo} alt="Kilcard" className="h-16 w-auto mix-blend-multiply" />
+      <Link to="/intro" className="mb-8">
+        <img src={kilcardLogo} alt="Kilcard" className="h-28 w-auto mix-blend-multiply" />
       </Link>
 
       <div className="w-full max-w-sm animate-reveal">
