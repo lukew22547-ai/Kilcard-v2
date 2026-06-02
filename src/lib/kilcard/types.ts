@@ -40,7 +40,9 @@ function generateId(): string {
 }
 
 export function makeRound(course: string, holes: 9 | 18 = 18, customPars?: Array<3 | 4 | 5>): Round {
-  const pars = customPars ?? (holes === 9 ? DEFAULT_PARS_9 : DEFAULT_PARS);
+  // Slice to exactly `holes` entries so a 9-hole round at an 18-hole course
+  // doesn't get 18 holes worth of pars.
+  const pars = (customPars ?? (holes === 9 ? DEFAULT_PARS_9 : DEFAULT_PARS)).slice(0, holes);
   return {
     id: generateId(),
     course: course.trim() || "Untitled Course",

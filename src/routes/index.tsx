@@ -46,6 +46,7 @@ function Index() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CourseInfo | null>(null);
   const [showDrop, setShowDrop] = useState(false);
+  const [justPicked, setJustPicked] = useState(false);
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const [authReady, setAuthReady] = useState(false);
   const authReadyRef = useRef(false);
@@ -113,11 +114,13 @@ function Index() {
   function pickCourse(c: CourseInfo) {
     setSelected(c);
     setQuery(c.name);
-    // Only switch to 9 if the course is a 9-hole course.
-    // Never override an explicit 9-hole selection the user already made.
     if (c.holes === 9) setHoleCount(9);
     setShowDrop(false);
     inputRef.current?.blur();
+    // Brief guard so the Start button can't be accidentally tapped right
+    // after the dropdown closes on mobile (tap-through timing issue).
+    setJustPicked(true);
+    setTimeout(() => setJustPicked(false), 500);
   }
 
   function startRound() {
@@ -221,7 +224,7 @@ function Index() {
                   </span>
                 )}
                 {showDrop && suggestions.length > 0 && (
-                  <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-navy/10">
+                  <div className="absolute bottom-full z-20 mb-2 max-h-60 w-full overflow-y-auto rounded-2xl bg-white shadow-lg ring-1 ring-navy/10">
                     {suggestions.map((c) => (
                       <button
                         key={c.id}
@@ -246,7 +249,8 @@ function Index() {
             {/* Start button */}
             <button
               onClick={startRound}
-              className="w-full rounded-2xl bg-grass py-[15px] text-[15px] font-semibold text-paper shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+              disabled={justPicked}
+              className="w-full rounded-2xl bg-grass py-[15px] text-[15px] font-semibold text-paper shadow-sm transition-all hover:shadow-md active:scale-[0.98] disabled:opacity-60"
             >
               Start New Round
             </button>
