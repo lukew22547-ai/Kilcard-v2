@@ -67,7 +67,7 @@ function SummaryPage() {
 function SummaryContent({ round }: { round: Round }) {
   const stats = computeStats(round);
   const freeInsights = generateInsights(stats);
-  const [isPro] = useState(() => getProStatus());
+  const [isPro] = useState(true); // temporarily free
   const [aiInsights, setAiInsights] = useState<Insight[] | null>(null);
   const [aiLoading, setAiLoading] = useState(isPro);
 
