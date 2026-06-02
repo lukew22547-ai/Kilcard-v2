@@ -44,7 +44,7 @@ export const getAIInsights = createServerFn({ method: "POST" })
       ? `Up & Down: ${Math.round(data.upAndDownPct * 100)}% (${data.upAndDownAttempts} attempts)`
       : null;
 
-    const prompt = `You are an expert golf caddie analyst. Analyze this round and return exactly 3 concise, specific insights as a JSON array.
+    const prompt = `You are an experienced PGA golf instructor and caddie. A player just finished their round — analyze their data and deliver 3 detailed, personalized insights as a JSON array.
 
 Round data:
 - Holes played: ${data.holesPlayed}
@@ -58,9 +58,10 @@ Return ONLY a valid JSON array — no markdown, no explanation:
 [{"tone":"focus","title":"...","body":"..."},{"tone":"win","title":"...","body":"..."},{"tone":"neutral","title":"...","body":"..."}]
 
 Guidelines:
-- tone: "focus" = area needing work, "win" = strength to build on, "neutral" = general observation
-- Use miss direction data for specific directional advice
-- body: 1-2 sentences, direct and actionable
+- tone: "focus" = clear weakness, "win" = genuine strength to reinforce, "neutral" = tactical observation
+- Dig into the miss direction data — if they're consistently missing one way, explain the likely swing cause and give a specific drill or feel to fix it
+- body: 2-3 sentences. Be specific — name distances, drills, or practice routines. Write like a real caddie talking to a player after the round, not generic advice
+- Reference their actual numbers (e.g. "You hit only 3 of 9 fairways, all missing right...")
 - Exactly 3 insights`;
 
     try {
@@ -72,8 +73,8 @@ Guidelines:
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 600,
+          model: "claude-sonnet-4-6",
+          max_tokens: 1024,
           messages: [{ role: "user", content: prompt }],
         }),
       });
