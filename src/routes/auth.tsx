@@ -57,6 +57,7 @@ function AuthPage() {
       mode === "signup"
         ? await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password)
         : await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+      localStorage.setItem("kilcard:intro-seen", "true");
       navigate({ to: "/" });
     } catch (err: any) {
       setError(firebaseError(err.code));
@@ -70,6 +71,7 @@ function AuthPage() {
     setLoading(true);
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
+      localStorage.setItem("kilcard:intro-seen", "true");
       navigate({ to: "/" });
     } catch (err: any) {
       if (err.code !== "auth/popup-closed-by-user") setError(firebaseError(err.code));
@@ -80,6 +82,7 @@ function AuthPage() {
 
   function continueAsGuest() {
     localStorage.setItem("kilcard:guest", "true");
+    localStorage.setItem("kilcard:intro-seen", "true");
     navigate({ to: "/" });
   }
 

@@ -30,19 +30,45 @@ function Index() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!localStorage.getItem("kilcard:intro-seen")) {
-      navigate({ to: "/intro" });
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    let cancelled = false;
+
+    // Use a one-time listener to wait for Firebase to fully restore the session
+    // before making any routing decision. This prevents the race condition where
+    // onAuthStateChanged fires null on refresh before the session is loaded from cache.
+    const unsubscribeOnce = onAuthStateChanged(auth, (user) => {
+      unsubscribeOnce(); // detach immediately — we only need the resolved state
+      if (cancelled) return;
+
       const isGuest = localStorage.getItem("kilcard:guest") === "true";
-      if (!user && !isGuest) {
-        navigate({ to: "/auth" });
-      } else {
+
+      if (user) {
+        // Authenticated — stamp intro-seen so the flag is always reliable
+        localStorage.setItem("kilcard:intro-seen", "true");
         setAuthReady(true);
+      } else if (isGuest) {
+        setAuthReady(true);
+      } else {
+        // No session — decide where to send them
+        const hasSeenIntro = !!localStorage.getItem("kilcard:intro-seen");
+        navigate({ to: hasSeenIntro ? "/auth" : "/intro" });
       }
     });
-    return unsubscribe;
+
+    // Separate ongoing listener for sign-out while the page is open
+    const unsubscribeOngoing = onAuthStateChanged(auth, (user) => {
+      if (cancelled) return;
+      const isGuest = localStorage.getItem("kilcard:guest") === "true";
+      if (!user && !isGuest) {
+        setAuthReady(false);
+        navigate({ to: "/auth" });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribeOnce();
+      unsubscribeOngoing();
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!authReady) return null;
