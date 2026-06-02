@@ -102,6 +102,8 @@ function AuthPage() {
   function continueAsGuest() {
     localStorage.setItem("kilcard:guest", "true");
     stampAuthCookies();
+    // Start the 30-day expiry clock for guest data
+    localStorage.setItem("kilcard:guest-last-active", Date.now().toString());
     navigate({ to: "/" });
   }
 

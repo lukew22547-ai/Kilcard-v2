@@ -3,7 +3,7 @@ import { useRef, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AppShell } from "@/components/kilcard/AppShell";
-import { useActiveRound } from "@/lib/kilcard/storage";
+import { useActiveRound, clearExpiredGuestData, touchGuestLastActive } from "@/lib/kilcard/storage";
 import { computeStats } from "@/lib/kilcard/stats";
 import { makeRound } from "@/lib/kilcard/types";
 import { type CourseInfo, searchCourses } from "@/lib/kilcard/courses";
@@ -56,6 +56,9 @@ function Index() {
     if (typeof window === "undefined") return;
     let cancelled = false;
 
+    // Clean up stale guest data before checking auth state
+    clearExpiredGuestData();
+
     const isGuest         = () => localStorage.getItem("kilcard:guest") === "true";
     const signedInBefore  = hasSignedInBefore();  // synchronous cookie read
 
@@ -81,6 +84,7 @@ function Index() {
         stampAuthCookies();
         authReadyRef.current = true;
         setAuthReady(true);
+        if (isGuest()) touchGuestLastActive();
       } else if (!signedInBefore) {
         // Firebase says null AND no prior sign-in cookie → genuinely signed out
         clearTimeout(fallback);

@@ -7,6 +7,37 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import type { Round } from "./types";
 
+// ── Guest data expiry ─────────────────────────────────────────────────────
+// Guest rounds sit in localStorage forever unless we clean them up.
+// On every app load we check the last-active timestamp and wipe guest
+// data if the user hasn't opened the app in GUEST_EXPIRY_DAYS days.
+
+const GUEST_EXPIRY_DAYS = 30;
+const GUEST_LAST_ACTIVE_KEY = "kilcard:guest-last-active";
+
+export function touchGuestLastActive() {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(GUEST_LAST_ACTIVE_KEY, Date.now().toString());
+}
+
+export function clearExpiredGuestData() {
+  if (typeof window === "undefined") return;
+  const isGuest = localStorage.getItem("kilcard:guest") === "true";
+  if (!isGuest) return;
+
+  const lastActive = parseInt(localStorage.getItem(GUEST_LAST_ACTIVE_KEY) ?? "0", 10);
+  const expiryMs   = GUEST_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+
+  if (lastActive === 0 || Date.now() - lastActive > expiryMs) {
+    // Wipe all guest data
+    localStorage.removeItem("kilcard:active-round:guest");
+    localStorage.removeItem("kilcard:history:guest");
+    localStorage.removeItem("kilcard:guest");
+    localStorage.removeItem(GUEST_LAST_ACTIVE_KEY);
+    localStorage.removeItem("kilcard:guest-last-active");
+  }
+}
+
 // ── Local storage helpers ──────────────────────────────────────────────────
 
 function readLocal<T>(key: string, fallback: T): T {
