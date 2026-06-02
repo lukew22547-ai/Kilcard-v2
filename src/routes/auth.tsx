@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  type ConfirmationResult,
+  signInWithPopup,
+  GoogleAuthProvider,
+  TwitterAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import kilcardLogo from "@/assets/KilCard.png";
@@ -21,78 +21,34 @@ export const Route = createFileRoute("/auth")({
 });
 
 type Mode = "signup" | "login";
-type Method = "email" | "phone";
-type PhoneStep = "input" | "verify";
 
 function firebaseError(code: string): string {
   switch (code) {
-    case "auth/email-already-in-use":      return "An account with that email already exists. Try logging in.";
-    case "auth/user-not-found":            return "No account found. Check your email or sign up.";
-    case "auth/wrong-password":            return "Incorrect password. Try again.";
-    case "auth/invalid-credential":        return "Incorrect email or password.";
-    case "auth/weak-password":             return "Password must be at least 6 characters.";
-    case "auth/invalid-email":             return "Enter a valid email address.";
-    case "auth/too-many-requests":         return "Too many attempts. Try again later.";
-    case "auth/invalid-phone-number":      return "Enter a valid US phone number.";
-    case "auth/invalid-verification-code": return "Incorrect code. Check the text and try again.";
-    case "auth/code-expired":              return "Code expired. Request a new one.";
-    case "auth/quota-exceeded":            return "SMS quota exceeded. Try again later.";
-    case "auth/missing-phone-number":      return "Enter a phone number.";
-    case "auth/operation-not-allowed":     return "Phone sign-in is not enabled. Enable it in the Firebase console under Authentication → Sign-in method.";
-    case "auth/app-not-authorized":        return "This domain is not authorized in Firebase. Add it under Authentication → Settings → Authorized domains.";
-    case "auth/captcha-check-failed":      return "reCAPTCHA check failed. Refresh the page and try again.";
-    case "auth/invalid-app-credential":    return "reCAPTCHA error. Refresh the page and try again.";
-    case "auth/missing-app-credential":    return "reCAPTCHA not ready. Refresh the page and try again.";
-    case "auth/billing-not-enabled":       return "Firebase billing is not enabled. Upgrade to the Blaze plan to send SMS.";
-    case "auth/network-request-failed":    return "Network error. Check your connection and try again.";
-    default:                               return `Error: ${code ?? "unknown"}. Check the browser console for details.`;
+    case "auth/email-already-in-use":   return "An account with that email already exists. Try logging in.";
+    case "auth/user-not-found":         return "No account found. Check your email or sign up.";
+    case "auth/wrong-password":         return "Incorrect password. Try again.";
+    case "auth/invalid-credential":     return "Incorrect email or password.";
+    case "auth/weak-password":          return "Password must be at least 6 characters.";
+    case "auth/invalid-email":          return "Enter a valid email address.";
+    case "auth/too-many-requests":      return "Too many attempts. Try again later.";
+    case "auth/network-request-failed": return "Network error. Check your connection and try again.";
+    case "auth/popup-closed-by-user":   return "Sign-in window was closed. Try again.";
+    case "auth/popup-blocked":          return "Pop-up was blocked by your browser. Allow pop-ups and try again.";
+    case "auth/account-exists-with-different-credential":
+      return "An account already exists with the same email under a different sign-in method.";
+    default: return "Something went wrong. Please try again.";
   }
-}
-
-function formatPhone(raw: string) {
-  const digits = raw.replace(/\D/g, "").slice(0, 10);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode]     = useState<Mode>("signup");
-  const [method, setMethod] = useState<Method>("email");
-  const [email, setEmail]   = useState("");
-  const [phone, setPhone]   = useState("");
+  const [mode, setMode]         = useState<Mode>("signup");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError]   = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
 
-  // Phone two-step state
-  const [phoneStep, setPhoneStep]           = useState<PhoneStep>("input");
-  const [code, setCode]                     = useState("");
-  const confirmationRef                     = useRef<ConfirmationResult | null>(null);
-  const recaptchaRef                        = useRef<RecaptchaVerifier | null>(null);
-
-  function resetPhoneFlow() {
-    setPhoneStep("input");
-    setCode("");
-    confirmationRef.current = null;
-    recaptchaRef.current?.clear();
-    recaptchaRef.current = null;
-  }
-
-  function switchMode(m: Mode) {
-    setMode(m);
-    setError("");
-    resetPhoneFlow();
-  }
-
-  function switchMethod(m: Method) {
-    setMethod(m);
-    setError("");
-    resetPhoneFlow();
-  }
-
-  // ── Email auth ──────────────────────────────────────────────────────────────
+  // ── Email / password ────────────────────────────────────────────────────────
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -121,47 +77,18 @@ function AuthPage() {
     }
   }
 
-  // ── Phone — step 1: send SMS code ──────────────────────────────────────────
-  async function sendCode() {
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length !== 10) {
-      setError("Enter a valid 10-digit US phone number.");
-      return;
-    }
-
+  // ── Social providers ────────────────────────────────────────────────────────
+  async function signInWith(provider: "google" | "twitter") {
     setError("");
     setLoading(true);
     try {
-      recaptchaRef.current?.clear();
-      recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-      });
-      const result = await signInWithPhoneNumber(auth, `+1${digits}`, recaptchaRef.current);
-      confirmationRef.current = result;
-      setPhoneStep("verify");
-    } catch (err: any) {
-      console.error("Phone auth error:", err.code, err.message);
-      setError(firebaseError(err.code));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ── Phone — step 2: verify OTP ─────────────────────────────────────────────
-  async function verifyCode() {
-    if (!confirmationRef.current) return;
-    if (code.replace(/\D/g, "").length !== 6) {
-      setError("Enter the 6-digit code from your text message.");
-      return;
-    }
-
-    setError("");
-    setLoading(true);
-    try {
-      await confirmationRef.current.confirm(code.trim());
+      const p = provider === "google" ? new GoogleAuthProvider() : new TwitterAuthProvider();
+      await signInWithPopup(auth, p);
       navigate({ to: "/" });
     } catch (err: any) {
-      setError(firebaseError(err.code));
+      if (err.code !== "auth/popup-closed-by-user") {
+        setError(firebaseError(err.code));
+      }
     } finally {
       setLoading(false);
     }
@@ -172,14 +99,8 @@ function AuthPage() {
     navigate({ to: "/" });
   }
 
-  // ── Render helpers ──────────────────────────────────────────────────────────
-  const isPhone = method === "phone";
-
   return (
     <div className="flex min-h-screen flex-col bg-paper text-navy">
-      {/* Invisible reCAPTCHA mount point */}
-      <div id="recaptcha-container" />
-
       {/* Header */}
       <header className="shrink-0 border-b border-navy/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-6 py-4">
@@ -213,7 +134,7 @@ function AuthPage() {
               <button
                 key={m}
                 type="button"
-                onClick={() => switchMode(m)}
+                onClick={() => { setMode(m); setError(""); }}
                 className={
                   "flex-1 py-3 text-sm font-bold uppercase tracking-[0.25em] transition-colors " +
                   (mode === m
@@ -226,141 +147,85 @@ function AuthPage() {
             ))}
           </div>
 
-          {/* Method picker */}
-          <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-              {mode === "signup" ? "Sign up with" : "Sign in with"}
-            </label>
-            <div className="flex gap-2">
-              {(["email", "phone"] as Method[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => switchMethod(m)}
-                  className={
-                    "flex-1 py-2.5 text-xs font-bold uppercase tracking-[0.2em] transition-colors " +
-                    (method === m
-                      ? "bg-grass text-paper"
-                      : "border border-navy/15 text-navy/60 hover:bg-navy/5")
-                  }
-                >
-                  {m === "email" ? "Email" : "Phone"}
-                </button>
-              ))}
-            </div>
+          {/* Social buttons */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => signInWith("google")}
+              className="flex w-full items-center justify-center gap-3 border border-navy/15 py-4 text-sm font-bold uppercase tracking-[0.2em] text-navy transition-colors hover:bg-navy/5 disabled:opacity-60"
+            >
+              {/* Google icon */}
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+                <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+                <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => signInWith("twitter")}
+              className="flex w-full items-center justify-center gap-3 border border-navy/15 py-4 text-sm font-bold uppercase tracking-[0.2em] text-navy transition-colors hover:bg-navy/5 disabled:opacity-60"
+            >
+              {/* X / Twitter icon */}
+              <svg width="16" height="16" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/>
+              </svg>
+              Continue with X (Twitter)
+            </button>
           </div>
 
-          {/* ── Email form ── */}
-          {!isPhone && (
-            <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  inputMode="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                  placeholder="you@example.com"
-                  className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                  placeholder="Min. 6 characters"
-                  className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
-                />
-              </div>
-              {error && <p className="text-xs font-medium text-red-600">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-grass py-5 text-sm font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-navy disabled:opacity-60"
-              >
-                {loading ? "Please wait…" : mode === "signup" ? "Create Account" : "Log In"}
-              </button>
-            </form>
-          )}
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-navy/10" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-navy/30">or use email</span>
+            <div className="flex-1 border-t border-navy/10" />
+          </div>
 
-          {/* ── Phone form ── */}
-          {isPhone && phoneStep === "input" && (
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  value={phone}
-                  onChange={(e) => { setPhone(formatPhone(e.target.value)); setError(""); }}
-                  placeholder="(555) 000-0000"
-                  className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
-                />
-              </div>
-              {error && <p className="text-xs font-medium text-red-600">{error}</p>}
-              <button
-                type="button"
-                disabled={loading}
-                onClick={sendCode}
-                className="w-full bg-grass py-5 text-sm font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-navy disabled:opacity-60"
-              >
-                {loading ? "Sending…" : "Send Code"}
-              </button>
+          {/* Email form */}
+          <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
+                Email Address
+              </label>
+              <input
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                placeholder="you@example.com"
+                className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
+              />
             </div>
-          )}
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
+                Password
+              </label>
+              <input
+                type="password"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                placeholder="Min. 6 characters"
+                className="w-full border border-navy/15 bg-white px-4 py-4 text-sm font-medium text-navy placeholder:text-navy/30 focus:border-grass focus:outline-none"
+              />
+            </div>
 
-          {/* ── Phone — enter OTP ── */}
-          {isPhone && phoneStep === "verify" && (
-            <div className="space-y-4">
-              <div className="bg-navy/5 px-4 py-3">
-                <p className="text-xs font-medium text-navy/70">
-                  A 6-digit code was sent to <span className="font-bold text-navy">{phone}</span>.
-                </p>
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.25em] text-navy/50">
-                  Verification Code
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={code}
-                  onChange={(e) => { setCode(e.target.value.replace(/\D/g, "")); setError(""); }}
-                  placeholder="000000"
-                  className="w-full border border-navy/15 bg-white px-4 py-4 text-center font-mono text-xl font-bold tracking-[0.5em] text-navy placeholder:text-navy/20 focus:border-grass focus:outline-none"
-                />
-              </div>
-              {error && <p className="text-xs font-medium text-red-600">{error}</p>}
-              <button
-                type="button"
-                disabled={loading}
-                onClick={verifyCode}
-                className="w-full bg-grass py-5 text-sm font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-navy disabled:opacity-60"
-              >
-                {loading ? "Verifying…" : "Verify Code"}
-              </button>
-              <button
-                type="button"
-                onClick={resetPhoneFlow}
-                className="w-full py-2 text-xs font-bold uppercase tracking-[0.2em] text-navy/40 hover:text-navy/70"
-              >
-                ← Change number
-              </button>
-            </div>
-          )}
+            {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-grass py-5 text-sm font-bold uppercase tracking-[0.25em] text-paper transition-colors hover:bg-navy disabled:opacity-60"
+            >
+              {loading ? "Please wait…" : mode === "signup" ? "Create Account" : "Log In"}
+            </button>
+          </form>
 
           {/* Divider */}
           <div className="flex items-center gap-3">
