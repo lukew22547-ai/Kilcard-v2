@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SummaryRouteImport } from './routes/summary'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RoundRouteImport } from './routes/round'
+import { Route as ProRouteImport } from './routes/pro'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -30,6 +32,16 @@ const RoundRoute = RoundRouteImport.update({
   path: '/round',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProRoute = ProRouteImport.update({
+  id: '/pro',
+  path: '/pro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -44,6 +56,8 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/summary': typeof SummaryRoute
@@ -51,6 +65,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/summary': typeof SummaryRoute
@@ -59,21 +75,47 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/summary': typeof SummaryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history' | '/round' | '/sitemap.xml' | '/summary'
+  fullPaths:
+    | '/'
+    | '/history'
+    | '/onboarding'
+    | '/pro'
+    | '/round'
+    | '/sitemap.xml'
+    | '/summary'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history' | '/round' | '/sitemap.xml' | '/summary'
-  id: '__root__' | '/' | '/history' | '/round' | '/sitemap.xml' | '/summary'
+  to:
+    | '/'
+    | '/history'
+    | '/onboarding'
+    | '/pro'
+    | '/round'
+    | '/sitemap.xml'
+    | '/summary'
+  id:
+    | '__root__'
+    | '/'
+    | '/history'
+    | '/onboarding'
+    | '/pro'
+    | '/round'
+    | '/sitemap.xml'
+    | '/summary'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HistoryRoute: typeof HistoryRoute
+  OnboardingRoute: typeof OnboardingRoute
+  ProRoute: typeof ProRoute
   RoundRoute: typeof RoundRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SummaryRoute: typeof SummaryRoute
@@ -102,6 +144,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoundRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pro': {
+      id: '/pro'
+      path: '/pro'
+      fullPath: '/pro'
+      preLoaderRoute: typeof ProRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
@@ -122,6 +178,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HistoryRoute: HistoryRoute,
+  OnboardingRoute: OnboardingRoute,
+  ProRoute: ProRoute,
   RoundRoute: RoundRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SummaryRoute: SummaryRoute,
