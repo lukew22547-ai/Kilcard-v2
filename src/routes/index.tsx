@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { AppShell } from "@/components/kilcard/AppShell";
 import { useActiveRound, useHistory } from "@/lib/kilcard/storage";
 import { computeStats, formatToPar } from "@/lib/kilcard/stats";
@@ -29,15 +31,26 @@ function Index() {
   const inputRef = useRef<HTMLInputElement>(null);
   const last = history[0];
 
+  const [authReady, setAuthReady] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (!localStorage.getItem("kilcard:intro-seen")) {
-        navigate({ to: "/intro" });
-      } else if (!localStorage.getItem("kilcard:session")) {
-        navigate({ to: "/auth" });
-      }
+    if (typeof window === "undefined") return;
+    if (!localStorage.getItem("kilcard:intro-seen")) {
+      navigate({ to: "/intro" });
+      return;
     }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const isGuest = localStorage.getItem("kilcard:guest") === "true";
+      if (!user && !isGuest) {
+        navigate({ to: "/auth" });
+      } else {
+        setAuthReady(true);
+      }
+    });
+    return unsubscribe;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!authReady) return null;
 
 
   const suggestions = searchCourses(query);
