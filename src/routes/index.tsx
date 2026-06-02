@@ -101,8 +101,8 @@ function Index() {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-paper">
         <img src={kilcardLogo} alt="Kilcard" className="h-20 w-auto mix-blend-multiply" />
-        <div className="h-1 w-20 overflow-hidden rounded-full bg-navy/10">
-          <div className="h-full animate-[kc-slide-up_1.2s_ease-in-out_infinite] bg-grass" />
+        <div className="h-1 w-20 rounded-full bg-navy/10">
+          <div className="h-full w-1/2 animate-pulse rounded-full bg-grass" />
         </div>
       </div>
     );
