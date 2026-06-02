@@ -15,6 +15,7 @@ import { Route as RoundRouteImport } from './routes/round'
 import { Route as ProRouteImport } from './routes/pro'
 import { Route as IntroRouteImport } from './routes/intro'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as CaddieRouteImport } from './routes/caddie'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -50,6 +51,11 @@ const StatsRoute = StatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CaddieRoute = CaddieRouteImport.update({
   id: '/caddie',
   path: '/caddie',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/caddie': typeof CaddieRoute
   '/history': typeof HistoryRoute
   '/intro': typeof IntroRoute
+  '/profile': typeof ProfileRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/caddie': typeof CaddieRoute
   '/history': typeof HistoryRoute
   '/intro': typeof IntroRoute
+  '/profile': typeof ProfileRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/caddie': typeof CaddieRoute
   '/history': typeof HistoryRoute
   '/intro': typeof IntroRoute
+  '/profile': typeof ProfileRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/caddie'
     | '/history'
     | '/intro'
+    | '/profile'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/caddie'
     | '/history'
     | '/intro'
+    | '/profile'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/caddie'
     | '/history'
     | '/intro'
+    | '/profile'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   CaddieRoute: typeof CaddieRoute
   HistoryRoute: typeof HistoryRoute
   IntroRoute: typeof IntroRoute
+  ProfileRoute: typeof ProfileRoute
   ProRoute: typeof ProRoute
   RoundRoute: typeof RoundRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/caddie'
       fullPath: '/caddie'
       preLoaderRoute: typeof CaddieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stats': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   CaddieRoute: CaddieRoute,
   HistoryRoute: HistoryRoute,
   IntroRoute: IntroRoute,
+  ProfileRoute: ProfileRoute,
   ProRoute: ProRoute,
   RoundRoute: RoundRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
