@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -39,8 +39,26 @@ function firebaseError(code: string): string {
   }
 }
 
+function stampAuthCookies() {
+  const c = "max-age=31536000; path=/; SameSite=Lax";
+  document.cookie = `kc_intro=1; ${c}`;
+  document.cookie = `kc_auth=1; ${c}`;
+  localStorage.setItem("kilcard:intro-seen", "true");
+}
+
 function AuthPage() {
   const navigate    = useNavigate();
+
+  // If Firebase already has a valid session when the auth page loads
+  // (e.g. iOS restored the session after a premature redirect here),
+  // send the user straight home without requiring them to sign in again.
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) { stampAuthCookies(); navigate({ to: "/" }); }
+    });
+    return unsub;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [mode, setMode]         = useState<Mode>("signup");
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -57,8 +75,7 @@ function AuthPage() {
       mode === "signup"
         ? await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password)
         : await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
-      localStorage.setItem("kilcard:intro-seen", "true");
-      document.cookie = "kc_intro=1; max-age=31536000; path=/; SameSite=Lax";
+      stampAuthCookies();
       navigate({ to: "/" });
     } catch (err: any) {
       setError(firebaseError(err.code));
@@ -72,8 +89,7 @@ function AuthPage() {
     setLoading(true);
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-      localStorage.setItem("kilcard:intro-seen", "true");
-      document.cookie = "kc_intro=1; max-age=31536000; path=/; SameSite=Lax";
+      stampAuthCookies();
       navigate({ to: "/" });
     } catch (err: any) {
       if (err.code !== "auth/popup-closed-by-user") setError(firebaseError(err.code));
@@ -84,7 +100,7 @@ function AuthPage() {
 
   function continueAsGuest() {
     localStorage.setItem("kilcard:guest", "true");
-    localStorage.setItem("kilcard:intro-seen", "true");
+    stampAuthCookies();
     navigate({ to: "/" });
   }
 

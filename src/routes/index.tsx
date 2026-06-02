@@ -7,18 +7,26 @@ import { useActiveRound } from "@/lib/kilcard/storage";
 import { computeStats } from "@/lib/kilcard/stats";
 import { makeRound } from "@/lib/kilcard/types";
 import { type CourseInfo, searchCourses } from "@/lib/kilcard/courses";
+import kilcardLogo from "@/assets/KilCard.png";
 
-// Write intro-seen to both localStorage and a long-lived cookie.
-// iOS Safari can clear localStorage on force-quit; cookies survive.
-function stampIntroSeen() {
+// Cookie helpers — cookies survive iOS Safari force-quit; localStorage may not.
+function stampAuthCookies() {
+  const c = "max-age=31536000; path=/; SameSite=Lax";
+  document.cookie = `kc_intro=1; ${c}`;
+  document.cookie = `kc_auth=1; ${c}`;
   localStorage.setItem("kilcard:intro-seen", "true");
-  document.cookie = "kc_intro=1; max-age=31536000; path=/; SameSite=Lax";
 }
 
+// Returns true if the user has previously signed in (any method).
+function hasSignedInBefore(): boolean {
+  return document.cookie.includes("kc_auth=1");
+}
+
+// Returns true if the user has seen the intro screen.
 function hasSeenIntro(): boolean {
   return (
-    localStorage.getItem("kilcard:intro-seen") === "true" ||
-    document.cookie.includes("kc_intro=1")
+    document.cookie.includes("kc_intro=1") ||
+    localStorage.getItem("kilcard:intro-seen") === "true"
   );
 }
 
@@ -40,54 +48,65 @@ function Index() {
   const [showDrop, setShowDrop] = useState(false);
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const [authReady, setAuthReady] = useState(false);
+  const authReadyRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
-    let initialResolved = false;
 
-    // auth.authStateReady() waits until Firebase has fully restored the session
-    // from ALL persistence layers (localStorage + IndexedDB). This is the correct
-    // fix for iOS Safari, which is slow to restore IndexedDB after a force quit
-    // and would otherwise fire onAuthStateChanged with null prematurely.
-    auth.authStateReady().then(() => {
-      if (cancelled) return;
-      initialResolved = true;
+    const isGuest         = () => localStorage.getItem("kilcard:guest") === "true";
+    const signedInBefore  = hasSignedInBefore();  // synchronous cookie read
 
-      const user  = auth.currentUser;
-      const isGuest = localStorage.getItem("kilcard:guest") === "true";
+    // If the user has NEVER interacted with this app → show intro.
+    if (!hasSeenIntro() && !signedInBefore) {
+      navigate({ to: "/intro" });
+      return;
+    }
 
-      if (user) {
-        stampIntroSeen();
-        setAuthReady(true);
-      } else if (isGuest) {
-        setAuthReady(true);
-      } else {
-        navigate({ to: hasSeenIntro() ? "/auth" : "/intro" });
-      }
-    });
-
-    // Ongoing listener — only acts after the initial resolution so it never
-    // interferes with authStateReady's determination on startup / refresh.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (cancelled || !initialResolved) return;
-      const isGuest = localStorage.getItem("kilcard:guest") === "true";
-      if (!user && !isGuest) {
-        setAuthReady(false);
+    // Fallback timer: if Firebase hasn't resolved within 6 seconds on iOS,
+    // send to auth (never intro — they've been here before).
+    const fallback = setTimeout(() => {
+      if (!authReadyRef.current && !cancelled) {
         navigate({ to: "/auth" });
-      } else if (user || isGuest) {
-        setAuthReady(true);
       }
+    }, 6000);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (cancelled) return;
+      if (user || isGuest()) {
+        // Session restored (or guest) → show home page
+        clearTimeout(fallback);
+        stampAuthCookies();
+        authReadyRef.current = true;
+        setAuthReady(true);
+      } else if (!signedInBefore) {
+        // Firebase says null AND no prior sign-in cookie → genuinely signed out
+        clearTimeout(fallback);
+        navigate({ to: "/auth" });
+      }
+      // If signedInBefore && null → do nothing; wait for fallback or next event.
+      // iOS Safari sometimes fires null first before restoring the session.
     });
 
     return () => {
       cancelled = true;
+      clearTimeout(fallback);
       unsubscribe();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!authReady) return null;
+  // Show a branded loading screen while Firebase restores the session.
+  if (!authReady) {
+    return (
+      <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-paper">
+        <img src={kilcardLogo} alt="Kilcard" className="h-20 w-auto mix-blend-multiply" />
+        <div className="h-1 w-20 overflow-hidden rounded-full bg-navy/10">
+          <div className="h-full animate-[kc-slide-up_1.2s_ease-in-out_infinite] bg-grass" />
+        </div>
+      </div>
+    );
+  }
 
   const suggestions = searchCourses(query);
 
