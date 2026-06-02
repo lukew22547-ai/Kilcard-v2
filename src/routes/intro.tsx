@@ -26,7 +26,7 @@ function IntroPage() {
   }, []);
 
   function enterApp() {
-    navigate({ to: "/" });
+    navigate({ to: "/auth" });
   }
 
   const goNext = useCallback(() => setSlide((s) => Math.min(s + 1, 1)), []);

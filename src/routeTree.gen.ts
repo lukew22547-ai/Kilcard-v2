@@ -13,8 +13,9 @@ import { Route as SummaryRouteImport } from './routes/summary'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RoundRouteImport } from './routes/round'
 import { Route as ProRouteImport } from './routes/pro'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as IntroRouteImport } from './routes/intro'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SummaryRoute = SummaryRouteImport.update({
@@ -37,9 +38,14 @@ const ProRoute = ProRouteImport.update({
   path: '/pro',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
+const IntroRoute = IntroRouteImport.update({
+  id: '/intro',
+  path: '/intro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -55,8 +61,9 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/history': typeof HistoryRoute
-  '/onboarding': typeof OnboardingRoute
+  '/intro': typeof IntroRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -64,8 +71,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/history': typeof HistoryRoute
-  '/onboarding': typeof OnboardingRoute
+  '/intro': typeof IntroRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -74,8 +82,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/history': typeof HistoryRoute
-  '/onboarding': typeof OnboardingRoute
+  '/intro': typeof IntroRoute
   '/pro': typeof ProRoute
   '/round': typeof RoundRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -85,8 +94,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/history'
-    | '/onboarding'
+    | '/intro'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
@@ -94,8 +104,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/history'
-    | '/onboarding'
+    | '/intro'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
@@ -103,8 +114,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/history'
-    | '/onboarding'
+    | '/intro'
     | '/pro'
     | '/round'
     | '/sitemap.xml'
@@ -113,8 +125,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   HistoryRoute: typeof HistoryRoute
-  OnboardingRoute: typeof OnboardingRoute
+  IntroRoute: typeof IntroRoute
   ProRoute: typeof ProRoute
   RoundRoute: typeof RoundRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -123,6 +136,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/summary': {
       id: '/summary'
       path: '/summary'
@@ -151,11 +171,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
+    '/intro': {
+      id: '/intro'
+      path: '/intro'
+      fullPath: '/intro'
+      preLoaderRoute: typeof IntroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -177,8 +197,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   HistoryRoute: HistoryRoute,
-  OnboardingRoute: OnboardingRoute,
+  IntroRoute: IntroRoute,
   ProRoute: ProRoute,
   RoundRoute: RoundRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

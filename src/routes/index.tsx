@@ -30,8 +30,12 @@ function Index() {
   const last = history[0];
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !localStorage.getItem("kilcard:intro-seen")) {
-      navigate({ to: "/intro" });
+    if (typeof window !== "undefined") {
+      if (!localStorage.getItem("kilcard:intro-seen")) {
+        navigate({ to: "/intro" });
+      } else if (!localStorage.getItem("kilcard:session")) {
+        navigate({ to: "/auth" });
+      }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
