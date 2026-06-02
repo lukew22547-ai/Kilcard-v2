@@ -1,80 +1,180 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  doc, collection, query, orderBy, limit,
+  onSnapshot, setDoc, deleteDoc,
+} from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
 import type { Round } from "./types";
 
-const ACTIVE_KEY = "kilcard:active-round";
-const HISTORY_KEY = "kilcard:history";
+// ── Local storage helpers ──────────────────────────────────────────────────
 
-function read<T>(key: string, fallback: T): T {
+function readLocal<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
     const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  } catch { return fallback; }
 }
 
-function write(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
+function writeLocal(key: string, value: unknown) {
+  if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-function emit() {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event("kilcard:change"));
+function removeLocal(key: string) {
+  if (typeof window !== "undefined") window.localStorage.removeItem(key);
 }
 
-export function getActiveRound(): Round | null {
-  return read<Round | null>(ACTIVE_KEY, null);
+function emitLocal() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("kilcard:change"));
 }
 
-export function setActiveRound(r: Round | null) {
-  if (r) write(ACTIVE_KEY, r);
-  else if (typeof window !== "undefined") window.localStorage.removeItem(ACTIVE_KEY);
-  emit();
+// ── Firestore paths ────────────────────────────────────────────────────────
+
+const activeRef  = (uid: string) => doc(db, "users", uid, "data", "activeRound");
+const roundsCol  = (uid: string) => collection(db, "users", uid, "rounds");
+const roundRef   = (uid: string, id: string) => doc(db, "users", uid, "rounds", id);
+
+// ── Auth mode ──────────────────────────────────────────────────────────────
+// "auth:{uid}" | "guest" | "pending"
+
+type Mode = string; // "auth:{uid}" | "guest" | "pending"
+
+function useMode(): Mode {
+  const [mode, setMode] = useState<Mode>("pending");
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setMode(`auth:${user.uid}`);
+      } else {
+        const isGuest = typeof window !== "undefined" && localStorage.getItem("kilcard:guest") === "true";
+        setMode(isGuest ? "guest" : "pending");
+      }
+    });
+    return unsub;
+  }, []);
+  return mode;
 }
 
-export function getHistory(): Round[] {
-  return read<Round[]>(HISTORY_KEY, []);
+function parseMode(mode: Mode): { type: "auth"; uid: string } | { type: "guest" } | { type: "pending" } {
+  if (mode.startsWith("auth:")) return { type: "auth", uid: mode.slice(5) };
+  if (mode === "guest") return { type: "guest" };
+  return { type: "pending" };
 }
 
-export function pushHistory(r: Round) {
-  const list = getHistory();
-  list.unshift(r);
-  write(HISTORY_KEY, list.slice(0, 50));
-  emit();
-}
+// ── useActiveRound ─────────────────────────────────────────────────────────
 
 export function useActiveRound() {
+  const mode    = useMode();
+  const parsed  = parseMode(mode);
   const [round, setRound] = useState<Round | null>(null);
+  const modeRef = useRef(parsed);
+  useEffect(() => { modeRef.current = parsed; }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    setRound(getActiveRound());
-    const handler = () => setRound(getActiveRound());
-    window.addEventListener("kilcard:change", handler);
-    window.addEventListener("storage", handler);
-    return () => {
-      window.removeEventListener("kilcard:change", handler);
-      window.removeEventListener("storage", handler);
-    };
-  }, []);
+    if (parsed.type === "pending") { setRound(null); return; }
+
+    if (parsed.type === "guest") {
+      const key = "kilcard:active-round:guest";
+      const load = () => setRound(readLocal<Round | null>(key, null));
+      load();
+      window.addEventListener("kilcard:change", load);
+      window.addEventListener("storage", load);
+      return () => {
+        window.removeEventListener("kilcard:change", load);
+        window.removeEventListener("storage", load);
+      };
+    }
+
+    // Firestore — real-time listener
+    const unsub = onSnapshot(activeRef(parsed.uid), (snap) => {
+      setRound(snap.exists() ? (snap.data() as Round) : null);
+    });
+    return unsub;
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const update = useCallback((next: Round | null) => {
-    setActiveRound(next);
-    setRound(next);
+    const m = modeRef.current;
+    setRound(next); // optimistic
+
+    if (m.type === "guest") {
+      const key = "kilcard:active-round:guest";
+      if (next) writeLocal(key, next); else removeLocal(key);
+      emitLocal();
+      return;
+    }
+
+    if (m.type === "auth") {
+      if (next) setDoc(activeRef(m.uid), next).catch(console.error);
+      else      deleteDoc(activeRef(m.uid)).catch(console.error);
+    }
   }, []);
+
   return [round, update] as const;
 }
 
+// ── useHistory ─────────────────────────────────────────────────────────────
+
 export function useHistory() {
+  const mode   = useMode();
+  const parsed = parseMode(mode);
   const [history, setHistory] = useState<Round[]>([]);
+
   useEffect(() => {
-    setHistory(getHistory());
-    const handler = () => setHistory(getHistory());
-    window.addEventListener("kilcard:change", handler);
-    window.addEventListener("storage", handler);
-    return () => {
-      window.removeEventListener("kilcard:change", handler);
-      window.removeEventListener("storage", handler);
-    };
-  }, []);
+    if (parsed.type === "pending") { setHistory([]); return; }
+
+    if (parsed.type === "guest") {
+      const key = "kilcard:history:guest";
+      const load = () => setHistory(readLocal<Round[]>(key, []));
+      load();
+      window.addEventListener("kilcard:change", load);
+      return () => window.removeEventListener("kilcard:change", load);
+    }
+
+    // Firestore — real-time ordered by date
+    const q    = query(roundsCol(parsed.uid), orderBy("date", "desc"), limit(50));
+    const unsub = onSnapshot(q, (snap) => {
+      setHistory(snap.docs.map((d) => d.data() as Round));
+    });
+    return unsub;
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return history;
+}
+
+// ── pushHistory ────────────────────────────────────────────────────────────
+
+export function pushHistory(r: Round): void {
+  const user = auth.currentUser;
+
+  if (user) {
+    // Fire-and-forget — Firestore queues writes offline if needed
+    setDoc(roundRef(user.uid, r.id), r).catch(console.error);
+    return;
+  }
+
+  // Guest: namespaced localStorage
+  const key  = "kilcard:history:guest";
+  const list = readLocal<Round[]>(key, []);
+  list.unshift(r);
+  writeLocal(key, list.slice(0, 50));
+  emitLocal();
+}
+
+// ── Legacy non-hook accessors (summary page fallback) ─────────────────────
+
+export function getHistory(): Round[] {
+  const user = auth.currentUser;
+  if (!user) return readLocal<Round[]>("kilcard:history:guest", []);
+  return []; // for auth users, use useHistory() hook instead
+}
+
+export function getActiveRound(): Round | null {
+  return readLocal<Round | null>("kilcard:active-round:guest", null);
+}
+
+export function setActiveRound(r: Round | null) {
+  if (r) writeLocal("kilcard:active-round:guest", r);
+  else removeLocal("kilcard:active-round:guest");
+  emitLocal();
 }
